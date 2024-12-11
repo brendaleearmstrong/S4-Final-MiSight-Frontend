@@ -1,82 +1,54 @@
 import { Navigation } from '@/components/layout/Navigation';
 import { Footer } from '@/components/layout/Footer';
-import { Shield, Activity, BarChart3, Users, Eye, Cloud } from 'lucide-react';
 
-export default function Features() {
-  const features = [
-    {
-      icon: <Shield className="w-12 h-12 text-amber-500" />,
-      title: "Safety Management",
-      description: "Comprehensive safety incident tracking, reporting, and analysis tools to maintain compliance and protect workers."
-    },
-    {
-      icon: <Activity className="w-12 h-12 text-amber-500" />,
-      title: "Environmental Monitoring",
-      description: "Real-time environmental data collection and analysis to ensure compliance with regulations and minimize impact."
-    },
-    {
-      icon: <BarChart3 className="w-12 h-12 text-amber-500" />,
-      title: "Analytics Dashboard",
-      description: "Advanced data visualization and reporting tools to make informed decisions and optimize operations."
-    },
-    {
-      icon: <Users className="w-12 h-12 text-amber-500" />,
-      title: "Stakeholder Portal",
-      description: "Transparent communication platform for sharing relevant data and updates with community stakeholders."
-    },
-    {
-      icon: <Eye className="w-12 h-12 text-amber-500" />,
-      title: "Real-time Monitoring",
-      description: "24/7 monitoring of critical environmental and safety metrics with instant alerts and notifications."
-    },
-    {
-      icon: <Cloud className="w-12 h-12 text-amber-500" />,
-      title: "Cloud Integration",
-      description: "Secure cloud-based platform for accessing your data anywhere, anytime, with automatic backups."
-    }
-  ];
-
+export default function About() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <Navigation />
       
-      <div className="py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-              Powerful Features for Mining Operations
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Comprehensive tools to manage safety, environmental impact, and stakeholder communication
+      <div className="pt-24 pb-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">The MiSight Story</h1>
+          
+          <div className="prose prose-lg">
+            <p className="text-gray-600 mb-6">
+              As a former Principal Advisor of Communications for a major Newfoundland mining company, 
+              I experienced firsthand the challenges of managing environmental and safety data across multiple sites. 
+              The endless hours spent chasing data for reports, consolidating information from various sources, 
+              and trying to maintain transparency with stakeholders inspired me to create something better.
             </p>
-          </div>
 
-          <div className="mx-auto mt-16 grid max-w-7xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature, index) => (
-              <div 
-                key={index}
-                className="flex flex-col items-start p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
-              >
-                <div className="p-3 rounded-lg bg-amber-50">
-                  {feature.icon}
-                </div>
-                <h3 className="mt-4 text-xl font-semibold text-gray-900">
-                  {feature.title}
-                </h3>
-                <p className="mt-2 text-gray-500">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
-          </div>
+            <p className="text-gray-600 mb-6">
+              Now, as a full-stack development student, I&apos;ve combined my industry experience with 
+              modern technology to build MiSight – a comprehensive solution that addresses these 
+              pain points head-on. Our platform serves as a single source of truth for mining operations, 
+              streamlining data collection, analysis, and reporting.
+            </p>
 
-          <div className="mt-20 text-center">
-            <a
-              href="/pricing"
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700"
-            >
-              View Pricing
-            </a>
+            <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-4">Why MiSight?</h2>
+            
+            <p className="text-gray-600 mb-6">
+              In the mining industry, data transparency isn&apos;t just about compliance – it&apos;s about building 
+              trust with communities and stakeholders. MiSight bridges the gap between mining operations 
+              and stakeholders by providing:
+            </p>
+
+            <ul className="list-disc pl-6 mb-6 text-gray-600">
+              <li>Real-time environmental monitoring</li>
+              <li>Comprehensive safety tracking</li>
+              <li>Automated report generation</li>
+              <li>Stakeholder communication tools</li>
+              <li>Data-driven insights for better decision making</li>
+            </ul>
+
+            <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-4">Our Mission</h2>
+            
+            <p className="text-gray-600 mb-6">
+              MiSight&#39;s mission is to transform how mining companies manage and share their operational data. 
+              We believe that better data management leads to better decisions, safer operations, and stronger 
+              relationships with stakeholders. By providing a single, comprehensive platform, we&#39;re making it 
+              easier for mining companies to maintain compliance, ensure safety, and build trust with their communities.
+            </p>
           </div>
         </div>
       </div>

@@ -1,51 +1,28 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import Home from './pages/Home'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import ProtectedRoute from './components/ProtectedRoute'
-import AdminDashboard from './pages/dashboards/AdminDashboard'
-import MineAdminDashboard from './pages/dashboards/MineAdminDashboard'
-import UserDashboard from './pages/dashboards/UserDashboard'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Features from './pages/Features';
+import Solutions from './pages/Solutions'; 
+import Contact from './pages/Contact';
+import About from './pages/About';
+import Pricing from './pages/Pricing';
 
-function App() {
+const App = () => {
   return (
-    <div className="min-h-screen bg-[#151922]">
+    <Router>
       <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        
-        {/* Protected Routes */}
-        <Route 
-          path="/admin/*" 
-          element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/mine-admin/*" 
-          element={
-            <ProtectedRoute requiredRole="MINE_ADMIN">
-              <MineAdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute requiredRole="USER">
-              <UserDashboard />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/solutions" element={<Solutions />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/pricing" element={<Pricing />} />
       </Routes>
-    </div>
-  )
-}
+    </Router>
+  );
+};
 
-export default App
+export default App;
