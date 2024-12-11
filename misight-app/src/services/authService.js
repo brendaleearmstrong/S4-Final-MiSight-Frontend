@@ -1,66 +1,57 @@
-const USERS_KEY = 'misight_users';
-const CURRENT_USER_KEY = 'misight_current_user';
+import axios from 'axios';
 
-// Demo users with different roles
-const defaultUsers = [
-  { username: 'admin', password: 'admin123', role: 'ADMIN' },
-  { username: 'mine_admin', password: 'mine123', role: 'MINE_ADMIN' },
-  { username: 'user', password: 'user123', role: 'USER' }
-];
-
-// Initialize default users if none exist
-if (!localStorage.getItem(USERS_KEY)) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
-}
+const API_URL = '/api/users';
 
 export const authService = {
-  login: (credentials) => {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY));
-    const user = users.find(
-      u => u.username === credentials.username && u.password === credentials.password
-    );
-    
-    if (!user) {
-      throw new Error('Invalid credentials');
+  async signup(userData) {
+    try {
+      const response = await axios.post(`${API_URL}/signup`, userData);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw new Error('Registration failed. Please try again later.');
     }
-
-    const { password, ...userWithoutPassword } = user;
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-    return userWithoutPassword;
   },
 
-  signup: (userData) => {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-    
-    // Check if username already exists
-    if (users.some(user => user.username === userData.username)) {
-      throw new Error('Username already exists');
+  async login(credentials) {
+    try {
+      const response = await axios.post(`${API_URL}/login`, credentials);
+      const userData = response.data;
+      localStorage.setItem('user', JSON.stringify(userData));
+      return userData;
+    } catch (error) {
+      throw new Error('Invalid username or password');
     }
+  },
 
-    // Add new user
-    const newUser = {
-      ...userData,
-      role: userData.role || 'USER' // Default to USER role if none specified
-    };
+  logout() {
+    localStorage.removeItem('user');
+  },
+
+  getCurrentUser() {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    return JSON.parse(userStr);
+  },
+
+  isAuthenticated() {
+    return !!this.getCurrentUser();
+  },
+
+  getDashboardRoute(user) {
+    if (!user) return '/login';
     
-    users.push(newUser);
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    
-    // Return user without password
-    const { password, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
-  },
-
-  logout: () => {
-    localStorage.removeItem(CURRENT_USER_KEY);
-  },
-
-  getCurrentUser: () => {
-    const user = localStorage.getItem(CURRENT_USER_KEY);
-    return user ? JSON.parse(user) : null;
-  },
-
-  isAuthenticated: () => {
-    return !!localStorage.getItem(CURRENT_USER_KEY);
+    switch (user.role) {
+      case 'ADMIN':
+        return '/admin/dashboard';
+      case 'MINE_ADMIN':
+        return '/mine-admin/dashboard';
+      case 'USER':
+        return '/dashboard';
+      default:
+        return '/';
+    }
   }
 };
