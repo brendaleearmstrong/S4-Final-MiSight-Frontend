@@ -1,15 +1,14 @@
+// src/pages/Signup.jsx
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
-import { authAPI } from '../services/api';
 
-export default function SignupPage() {
+export default function Signup() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    confirmPassword: '',
-    role: 'USER'
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -19,48 +18,103 @@ export default function SignupPage() {
     setIsLoading(true);
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      await authAPI.signup({
+      // Validate form inputs
+      if (!formData.username || !formData.password) {
+        throw new Error('Username and password are required');
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+
+      if (formData.password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+
+      // Check for demo accounts
+      const demoAccounts = {
+        'admin': { pass: 'admin123', role: 'ADMIN' },
+        'mine': { pass: 'mine123', role: 'MINE_ADMIN' },
+        'user': { pass: 'user123', role: 'USER' }
+      };
+
+      // If it's a demo account, verify credentials
+      if (demoAccounts[formData.username]) {
+        if (formData.password === demoAccounts[formData.username].pass) {
+          // Store demo user info
+          localStorage.setItem('user', JSON.stringify({
+            username: formData.username,
+            role: demoAccounts[formData.username].role
+          }));
+          
+          // Navigate based on role
+          const dashboardPaths = {
+            'ADMIN': '/AdminDashboard',
+            'MINE_ADMIN': '/MineAdminDashboard',
+            'USER': '/UserDashboard'
+          };
+          
+          navigate(dashboardPaths[demoAccounts[formData.username].role]);
+          return;
+        }
+        throw new Error('Invalid credentials for demo account');
+      }
+
+      // For non-demo accounts, proceed with API call
+      console.log('Attempting to create account:', {
         username: formData.username,
-        password: formData.password,
-        role: formData.role
+        password: formData.password
       });
+
+      const response = await fetch('http://localhost:8080/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          username: formData.username,
+          password: formData.password,
+          'privileges[]': []
+        })
+      });
+
+      const responseData = await response.text();
+      console.log('Server response:', responseData);
+
+      if (!response.ok) {
+        throw new Error(responseData || 'Failed to create account');
+      }
+
+      // Navigate to login with success message
       navigate('/login', { 
         state: { message: 'Account created successfully. Please login.' }
       });
-    } catch (error) {
-      setError(error.message || 'Failed to create account');
+
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#151922]">
-      <nav className="fixed w-full bg-[#151922] z-50">
+    <div className="min-h-screen bg-background">
+      <nav className="fixed w-full bg-background z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <Link to="/" className="flex items-center">
-              <Shield className="h-8 w-8 text-amber-500" />
-              <span className="ml-2 text-2xl font-bold text-white">MiSight</span>
+              <Shield className="h-8 w-8 text-primary" />
+              <span className="text-2xl font-bold text-white">MiSight</span>
             </Link>
-            <div className="hidden md:flex items-center space-x-8">
-              <Link to="/" className="text-gray-300 hover:text-amber-500 transition-colors">Home</Link>
-              <Link to="/about" className="text-gray-300 hover:text-amber-500 transition-colors">About</Link>
-              <Link to="/features" className="text-gray-300 hover:text-amber-500 transition-colors">Features</Link>
-              <Link to="/solutions" className="text-gray-300 hover:text-amber-500 transition-colors">Solutions</Link>
-              <Link to="/pricing" className="text-gray-300 hover:text-amber-500 transition-colors">Pricing</Link>
-              <Link to="/contact" className="text-gray-300 hover:text-amber-500 transition-colors">Contact</Link>
-              <Link 
-                to="/login"
-                className="px-4 py-2 bg-amber-500 text-black font-medium rounded-lg hover:bg-amber-600 transition-colors"
-              >
+            <div className="flex items-center space-x-8">
+              <Link to="/about" className="text-gray-300 hover:text-primary">About</Link>
+              <Link to="/features" className="text-gray-300 hover:text-primary">Features</Link>
+              <Link to="/solutions" className="text-gray-300 hover:text-primary">Solutions</Link>
+              <Link to="/pricing" className="text-gray-300 hover:text-primary">Pricing</Link>
+              <Link to="/contact" className="text-gray-300 hover:text-primary">Contact</Link>
+              <Link to="/login" className="px-4 py-2 bg-primary text-black font-medium rounded-lg hover:bg-primary-dark">
                 Login
               </Link>
             </div>
@@ -68,91 +122,81 @@ export default function SignupPage() {
         </div>
       </nav>
 
-      <div className="min-h-screen pt-16 pb-12 flex flex-col justify-center">
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl bg-[#1A1F2B] rounded-lg shadow-xl overflow-hidden">
-          <div className="px-8 pt-8 pb-2">
-            <div className="flex justify-center">
-              <Shield className="h-12 w-12 text-amber-500" />
-            </div>
-            <h2 className="mt-4 text-center text-3xl font-bold tracking-tight text-white">
-              Create your account
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-400">
-              Join MiSight to start monitoring mining operations
-            </p>
+      <div className="pt-32 pb-12 px-4">
+        <div className="max-w-md mx-auto bg-surface rounded-lg shadow-xl p-8">
+          <div className="text-center">
+            <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-white mb-2">Create your account</h2>
+            <p className="text-gray-400 mb-8">Join MiSight to start monitoring mining operations</p>
           </div>
 
-          <div className="p-8">
-            {error && (
-              <div className="mb-4 bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-200">Username</label>
-                <input
-                  type="text"
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-amber-500 focus:outline-none focus:ring-amber-500"
-                  value={formData.username}
-                  onChange={(e) => setFormData({...formData, username: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200">Password</label>
-                <input
-                  type="password"
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-amber-500 focus:outline-none focus:ring-amber-500"
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200">Confirm Password</label>
-                <input
-                  type="password"
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-amber-500 focus:outline-none focus:ring-amber-500"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200">Account Type</label>
-                <select
-                  className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-amber-500 focus:outline-none focus:ring-amber-500"
-                  value={formData.role}
-                  onChange={(e) => setFormData({...formData, role: e.target.value})}
-                >
-                  <option value="USER">Community Stakeholder</option>
-                  <option value="MINE_ADMIN">Mine Administrator</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50"
-              >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-              </button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-400">
-                Already have an account?{' '}
-                <Link to="/login" className="font-medium text-amber-500 hover:text-amber-400">
-                  Sign in
-                </Link>
-              </p>
+          {error && (
+            <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded mb-6">
+              {error}
             </div>
-          </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Username</label>
+              <input
+                type="text"
+                required
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Password</label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Confirm Password</label>
+              <input
+                type="password"
+                required
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Demo Accounts Available</label>
+              <div className="bg-gray-800 rounded p-4 text-sm text-gray-400 space-y-2 mb-4">
+                <p>For testing purposes, use:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>admin/admin123 - System Administrator</li>
+                  <li>mine/mine123 - Mine Administrator</li>
+                  <li>user/user123 - User</li>
+                </ul>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary text-black font-medium rounded-lg py-3 hover:bg-primary-dark transition-colors disabled:opacity-50"
+            >
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-gray-400">
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary hover:text-primary-dark">
+              Sign in
+            </Link>
+          </p>
         </div>
       </div>
     </div>

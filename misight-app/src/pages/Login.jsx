@@ -34,9 +34,9 @@ export default function Login() {
         }));
 
         // Redirect based on role
-        if (formData.username === 'admin') navigate('/admin/dashboard');
-        else if (formData.username === 'mine') navigate('/mine-admin/dashboard');
-        else navigate('/dashboard');
+        if (formData.username === 'admin') navigate('/pages/AdminDashboard');
+        else if (formData.username === 'mine') navigate('/pages/MineAdmindashboard');
+        else navigate('/pages/UserDashboard');
       } else {
         throw new Error('Invalid credentials');
       }
