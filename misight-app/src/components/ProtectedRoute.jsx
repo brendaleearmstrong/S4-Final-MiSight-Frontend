@@ -1,24 +1,20 @@
 import { Navigate } from 'react-router-dom';
-import { authService } from '../services/authService';
 import PropTypes from 'prop-types';
-function ProtectedRoute({ children, requiredRole }) {
-  const currentUser = authService.getCurrentUser();
+import { authAPI } from '../services/api';
 
-  if (!currentUser) {
+function ProtectedRoute({ children, requiredRole }) {
+  const isAuthenticated = authAPI.isAuthenticated();
+  const hasRequiredRole = requiredRole ? authAPI.hasRole(requiredRole) : true;
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && currentUser.role !== requiredRole) {
-    // Redirect to appropriate dashboard based on role
-    switch (currentUser.role) {
-      case 'ADMIN':
-        return <Navigate to="/admin/dashboard" replace />;
-      case 'MINE_ADMIN':
-        return <Navigate to="/mine-admin/dashboard" replace />;
-      default:
-        return <Navigate to="/dashboard" replace />;
-    }
+  if (!hasRequiredRole) {
+    const user = authAPI.getCurrentUser();
+    return <Navigate to={authAPI.getProtectedRoute(user?.role)} replace />;
   }
+
   return children;
 }
 
