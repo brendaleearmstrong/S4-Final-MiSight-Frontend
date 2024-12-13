@@ -1,6 +1,7 @@
+// src/components/ProtectedRoute.jsx
 import { Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { authAPI } from '../services/api';
+import { authAPI } from '../services/auth';
 
 function ProtectedRoute({ children, requiredRole }) {
   const isAuthenticated = authAPI.isAuthenticated();

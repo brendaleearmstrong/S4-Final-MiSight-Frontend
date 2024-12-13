@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -18,24 +20,21 @@ export default function Login() {
     setError('');
 
     try {
-      // For testing, we'll use these credentials:
-      // admin/admin123 -> Admin Dashboard
-      // mine/mine123 -> Mine Admin Dashboard
-      // user/user123 -> User Dashboard
       if (
         (formData.username === 'admin' && formData.password === 'admin123') ||
         (formData.username === 'mine' && formData.password === 'mine123') ||
         (formData.username === 'user' && formData.password === 'user123')
       ) {
-        localStorage.setItem('user', JSON.stringify({
+        const userData = {
           username: formData.username,
           role: formData.username === 'admin' ? 'ADMIN' : 
                 formData.username === 'mine' ? 'MINE_ADMIN' : 'USER'
-        }));
+        };
+        
+        login(userData);
 
-        // Redirect based on role
         if (formData.username === 'admin') navigate('/pages/AdminDashboard');
-        else if (formData.username === 'mine') navigate('/pages/MineAdmindashboard');
+        else if (formData.username === 'mine') navigate('/pages/MineAdminDashboard');
         else navigate('/pages/UserDashboard');
       } else {
         throw new Error('Invalid credentials');
@@ -49,17 +48,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Navigation - keeping consistent with Home */}
       <nav className="fixed w-full bg-black/50 backdrop-blur-sm z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <svg className="w-10 h-10 text-amber-500" viewBox="0 0 40 40">
-                <path
-                  fill="currentColor"
-                  d="M20 5L30 15L20 25L10 15L20 5ZM20 35L10 25L20 15L30 25L20 35Z"
-                />
-              </svg>
+              <Shield className="h-8 w-8 text-amber-500" />
               <span className="ml-3 text-2xl font-bold text-white">MiSight</span>
             </Link>
           </div>
@@ -127,6 +120,15 @@ export default function Login() {
                   Sign up
                 </Link>
               </p>
+              
+              <div className="mt-4 p-4 bg-gray-50 rounded-md">
+                <p className="text-sm text-gray-600 font-medium mb-2">Demo Accounts:</p>
+                <ul className="text-sm text-gray-500 space-y-1">
+                  <li>Admin: admin/admin123</li>
+                  <li>Mine Admin: mine/mine123</li>
+                  <li>User: user/user123</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
