@@ -1,32 +1,86 @@
+// src/components/dashboard/sections/UsersSection.jsx
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '../DataTable';
 import { ManagementModal } from '../ManagementModal';
 import { Plus } from 'lucide-react';
+import { endpoints } from '@/services/api';
 
-export function UsersSection({ data, onAdd, onEdit, onDelete }) {
+export function UsersSection() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const queryClient = useQueryClient();
+
+  const { data: users, isLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: endpoints.users.getAll
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (formData) => {
+      const data = {
+        username: formData.username,
+        password: formData.password,
+        role: formData.role,
+        privileges: formData.privileges || []
+      };
+      return await endpoints.users.create(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('users');
+      setShowModal(false);
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      return await endpoints.users.update(id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('users');
+      setShowModal(false);
+    }
+  });
 
   const columns = [
     { key: 'username', label: 'Username' },
-    { key: 'email', label: 'Email' },
-    { key: 'role', label: 'Role' }
+    { key: 'role', label: 'Role' },
+    { 
+      key: 'privileges', 
+      label: 'Privileges',
+      render: (privileges) => privileges?.join(', ') || '-'
+    }
   ];
 
   const fields = [
-    { name: 'username', label: 'Username', type: 'text' },
-    { name: 'email', label: 'Email', type: 'email' },
+    { 
+      name: 'username', 
+      label: 'Username', 
+      type: 'text', 
+      required: true 
+    },
+    { 
+      name: 'password', 
+      label: 'Password', 
+      type: 'password',
+      required: !editingUser
+    },
     { 
       name: 'role', 
       label: 'Role', 
       type: 'select',
-      options: ['Mine Admin', 'User/Stakeholder'] 
+      required: true,
+      options: [
+        { value: 'ADMIN', label: 'Admin' },
+        { value: 'MINE_ADMIN', label: 'Mine Admin' },
+        { value: 'USER', label: 'User' }
+      ]
     }
   ];
 
   return (
-    <div>
-      <div className="flex justify-between mb-6">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Users Management</h2>
         <button
           onClick={() => setShowModal(true)}
@@ -38,13 +92,18 @@ export function UsersSection({ data, onAdd, onEdit, onDelete }) {
       </div>
 
       <DataTable
-        data={data}
+        data={users || []}
         columns={columns}
         onEdit={(user) => {
           setEditingUser(user);
           setShowModal(true);
         }}
-        onDelete={onDelete}
+        onDelete={(id) => {
+          if (window.confirm('Are you sure you want to delete this user?')) {
+            endpoints.users.delete(id);
+            queryClient.invalidateQueries('users');
+          }
+        }}
       />
 
       <ManagementModal
@@ -56,12 +115,10 @@ export function UsersSection({ data, onAdd, onEdit, onDelete }) {
         }}
         onSubmit={(data) => {
           if (editingUser) {
-            onEdit(editingUser.id, data);
+            updateMutation.mutate({ id: editingUser.id, data });
           } else {
-            onAdd(data);
+            createMutation.mutate(data);
           }
-          setShowModal(false);
-          setEditingUser(null);
         }}
         fields={fields}
         data={editingUser}

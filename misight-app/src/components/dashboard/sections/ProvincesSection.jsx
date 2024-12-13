@@ -1,94 +1,130 @@
+// src/components/dashboard/sections/ProvincesSection.jsx
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '../DataTable';
 import { ManagementModal } from '../ManagementModal';
 import { Plus } from 'lucide-react';
+import { endpoints } from '@/services/api';
 
 export function ProvincesSection() {
   const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingProvince, setEditingProvince] = useState(null);
+  const queryClient = useQueryClient();
 
-  // Mock data for Phase 1
-  const [provinces] = useState([
-    {
-      id: 1,
-      name: 'Newfoundland and Labrador',
-      abbreviation: 'NL',
-      activeMines: 5
-    },
-    {
-      id: 2,
-      name: 'Nova Scotia',
-      abbreviation: 'NS',
-      activeMines: 3
-    },
-    {
-      id: 3,
-      name: 'New Brunswick',
-      abbreviation: 'NB',
-      activeMines: 2
-    },
-    {
-      id: 4,
-      name: 'Quebec',
-      abbreviation: 'QC',
-      activeMines: 8
-    },
-    {
-      id: 5,
-      name: 'Ontario',
-      abbreviation: 'ON',
-      activeMines: 12
+  // Fetch provinces with their related mines data
+  const { data: provinces = [], isLoading } = useQuery({
+    queryKey: ['provinces'],
+    queryFn: async () => {
+      const response = await endpoints.provinces.getAll();
+      return response;
     }
-  ]);
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (formData) => {
+      const data = {
+        name: formData.name,
+        abbreviation: formData.abbreviation
+      };
+      const response = await endpoints.provinces.create(data);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('provinces');
+      setShowModal(false);
+    },
+    onError: (error) => {
+      console.error('Failed to create province:', error);
+      alert('Failed to create province. Please try again.');
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const response = await endpoints.provinces.update(id, data);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('provinces');
+      setShowModal(false);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await endpoints.provinces.delete(id);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('provinces');
+    }
+  });
+
+  // Calculate statistics
+  const totalProvinces = provinces.length;
+  const totalMines = provinces.reduce((sum, province) => sum + (province.mines?.length || 0), 0);
+  const avgMinesPerProvince = totalMines / totalProvinces || 0;
 
   const columns = [
     { key: 'name', label: 'Province Name' },
     { key: 'abbreviation', label: 'Code' },
     { 
-      key: 'activeMines', 
+      key: 'mines', 
       label: 'Active Mines',
-      render: (value) => (
+      render: (mines) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          {value} mines
+          {mines?.length || 0} mines
         </span>
       )
     }
   ];
 
   const fields = [
-    { name: 'name', label: 'Province Name', type: 'text' },
-    { name: 'abbreviation', label: 'Province Code', type: 'text', maxLength: 2 }
+    { 
+      name: 'name', 
+      label: 'Province Name', 
+      type: 'text', 
+      required: true 
+    },
+    { 
+      name: 'abbreviation', 
+      label: 'Province Code', 
+      type: 'text', 
+      required: true,
+      maxLength: 2
+    }
   ];
 
-  const handleAdd = (data) => {
-    const newProvince = {
-      id: provinces.length + 1,
-      ...data,
-      activeMines: 0
-    };
-    setProvinces([...provinces, newProvince]);
-    setShowModal(false);
-  };
-
-  const handleEdit = (data) => {
-    setProvinces(provinces.map(province => 
-      province.id === editingItem.id 
-        ? { ...province, ...data }
-        : province
-    ));
-    setShowModal(false);
-    setEditingItem(null);
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this province?')) {
-      setProvinces(provinces.filter(province => province.id !== id));
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="flex justify-between mb-6">
+    <div className="p-6">
+      <div className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-blue-700">{totalProvinces}</div>
+            <div className="text-sm text-blue-600">Total Provinces</div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-green-700">{totalMines}</div>
+            <div className="text-sm text-green-600">Total Active Mines</div>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-amber-700">
+              {avgMinesPerProvince.toFixed(1)}
+            </div>
+            <div className="text-sm text-amber-600">Average Mines per Province</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Provinces Management</h2>
         <button
           onClick={() => setShowModal(true)}
@@ -99,56 +135,37 @@ export function ProvincesSection() {
         </button>
       </div>
 
-      <div className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-blue-700">{provinces.length}</div>
-            <div className="text-sm text-blue-600">Total Provinces</div>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-700">
-              {provinces.reduce((sum, province) => sum + province.activeMines, 0)}
-            </div>
-            <div className="text-sm text-green-600">Total Active Mines</div>
-          </div>
-          <div className="bg-amber-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-amber-700">
-              {Math.round(provinces.reduce((sum, province) => sum + province.activeMines, 0) / provinces.length)}
-            </div>
-            <div className="text-sm text-amber-600">Average Mines per Province</div>
-          </div>
-        </div>
-      </div>
-
       <DataTable
         data={provinces}
         columns={columns}
         onEdit={(province) => {
-          setEditingItem(province);
+          setEditingProvince(province);
           setShowModal(true);
         }}
-        onDelete={handleDelete}
+        onDelete={(id) => {
+          if (window.confirm('Are you sure you want to delete this province?')) {
+            deleteMutation.mutate(id);
+          }
+        }}
       />
 
-      {showModal && (
-        <ManagementModal
-          title="Province"
-          isOpen={showModal}
-          onClose={() => {
-            setShowModal(false);
-            setEditingItem(null);
-          }}
-          fields={fields}
-          data={editingItem}
-          onSubmit={(data) => {
-            if (editingItem) {
-              handleEdit(data);
-            } else {
-              handleAdd(data);
-            }
-          }}
-        />
-      )}
+      <ManagementModal
+        title="Province"
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setEditingProvince(null);
+        }}
+        onSubmit={(data) => {
+          if (editingProvince) {
+            updateMutation.mutate({ id: editingProvince.id, data });
+          } else {
+            createMutation.mutate(data);
+          }
+        }}
+        fields={fields}
+        data={editingProvince}
+      />
     </div>
   );
 }

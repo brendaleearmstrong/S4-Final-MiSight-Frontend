@@ -1,47 +1,137 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '../DataTable';
 import { ManagementModal } from '../ManagementModal';
 import { Plus } from 'lucide-react';
+import { endpoints } from '@/services/api';
 
-export function PollutantsSection({ data, onAdd, onEdit, onDelete }) {
+export function PollutantsSection() {
   const [showModal, setShowModal] = useState(false);
   const [editingPollutant, setEditingPollutant] = useState(null);
+  const queryClient = useQueryClient();
 
-  // Mock data for Phase 1
-  const mockPollutants = [
-    {
-      id: 1,
-      name: 'PM2.5',
-      category: 'Air Quality',
-      unit: 'µg/m³',
-      threshold: 25
+  const { data: pollutants, isLoading } = useQuery({
+    queryKey: ['pollutants'],
+    queryFn: endpoints.pollutants.getAll
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (formData) => {
+      const preparedData = {
+        name: formData.name,
+        category: formData.category,
+        unit: formData.unit,
+        benchmarkValue: parseFloat(formData.benchmarkValue),
+        benchmarkType: formData.benchmarkType,
+        description: formData.description
+      };
+      const response = await endpoints.pollutants.create(preparedData);
+      return response;
     },
-    {
-      id: 2,
-      name: 'PM10',
-      category: 'Air Quality',
-      unit: 'µg/m³',
-      threshold: 50
+    onSuccess: () => {
+      queryClient.invalidateQueries('pollutants');
+      setShowModal(false);
+    },
+    onError: (error) => {
+      console.error('Failed to create pollutant:', error);
+      alert('Failed to create pollutant. Please try again.');
     }
-  ];
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const preparedData = {
+        name: data.name,
+        category: data.category,
+        unit: data.unit,
+        benchmarkValue: parseFloat(data.benchmarkValue),
+        benchmarkType: data.benchmarkType,
+        description: data.description
+      };
+      const response = await endpoints.pollutants.update(id, preparedData);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('pollutants');
+      setShowModal(false);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: endpoints.pollutants.delete,
+    onSuccess: () => queryClient.invalidateQueries('pollutants')
+  });
 
   const columns = [
-    { key: 'name', label: 'Pollutant Name' },
+    { key: 'name', label: 'Name' },
     { key: 'category', label: 'Category' },
     { key: 'unit', label: 'Unit' },
-    { key: 'threshold', label: 'Threshold' }
+    { key: 'benchmarkValue', label: 'Benchmark Value' },
+    { key: 'benchmarkType', label: 'Benchmark Type' }
   ];
 
   const fields = [
-    { name: 'name', label: 'Pollutant Name', type: 'text' },
-    { name: 'category', label: 'Category', type: 'text' },
-    { name: 'unit', label: 'Unit', type: 'text' },
-    { name: 'threshold', label: 'Threshold', type: 'number' }
+    { 
+      name: 'name', 
+      label: 'Pollutant Name', 
+      type: 'text', 
+      required: true 
+    },
+    { 
+      name: 'category', 
+      label: 'Category', 
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'AIR', label: 'Air Quality' },
+        { value: 'WATER', label: 'Water Quality' },
+        { value: 'SOIL', label: 'Soil Quality' },
+        { value: 'NOISE', label: 'Noise Level' }
+      ]
+    },
+    { 
+      name: 'unit', 
+      label: 'Unit', 
+      type: 'text', 
+      required: true 
+    },
+    { 
+      name: 'benchmarkValue', 
+      label: 'Benchmark Value', 
+      type: 'number',
+      required: true,
+      step: '0.01'
+    },
+    { 
+      name: 'benchmarkType', 
+      label: 'Benchmark Type', 
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'MAXIMUM', label: 'Maximum Allowable' },
+        { value: 'MINIMUM', label: 'Minimum Required' },
+        { value: 'TARGET', label: 'Target Value' },
+        { value: 'ALERT', label: 'Alert Level' }
+      ]
+    },
+    { 
+      name: 'description', 
+      label: 'Description', 
+      type: 'textarea'
+    }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className="flex justify-between mb-6">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Pollutants Management</h2>
         <button
           onClick={() => setShowModal(true)}
@@ -52,20 +142,18 @@ export function PollutantsSection({ data, onAdd, onEdit, onDelete }) {
         </button>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-        <p className="text-amber-800">
-          Phase 1 Preview: Showing mock data. API integration coming in Phase 2.
-        </p>
-      </div>
-
       <DataTable
-        data={mockPollutants}
+        data={pollutants || []}
         columns={columns}
         onEdit={(pollutant) => {
           setEditingPollutant(pollutant);
           setShowModal(true);
         }}
-        onDelete={onDelete}
+        onDelete={(id) => {
+          if (window.confirm('Are you sure you want to delete this pollutant?')) {
+            deleteMutation.mutate(id);
+          }
+        }}
       />
 
       <ManagementModal
@@ -77,12 +165,10 @@ export function PollutantsSection({ data, onAdd, onEdit, onDelete }) {
         }}
         onSubmit={(data) => {
           if (editingPollutant) {
-            onEdit(editingPollutant.id, data);
+            updateMutation.mutate({ id: editingPollutant.id, data });
           } else {
-            onAdd(data);
+            createMutation.mutate(data);
           }
-          setShowModal(false);
-          setEditingPollutant(null);
         }}
         fields={fields}
         data={editingPollutant}
