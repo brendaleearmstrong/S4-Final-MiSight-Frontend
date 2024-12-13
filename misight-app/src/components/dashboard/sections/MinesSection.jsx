@@ -1,11 +1,44 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '../DataTable';
 import { ManagementModal } from '../ManagementModal';
 import { Plus } from 'lucide-react';
+import { endpoints } from '../../../services/api';
 
-export function MinesSection({ data, minerals, onAdd, onEdit, onDelete }) {
+export function MinesSection() {
   const [showModal, setShowModal] = useState(false);
   const [editingMine, setEditingMine] = useState(null);
+  const queryClient = useQueryClient();
+
+  const { data: mines, isLoading, error } = useQuery({
+    queryKey: ['mines'],
+    queryFn: endpoints.mines.getAll,
+    retry: 1
+  });
+
+  const createMutation = useMutation({
+    mutationFn: endpoints.mines.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries('mines');
+      setShowModal(false);
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => endpoints.mines.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries('mines');
+      setShowModal(false);
+      setEditingMine(null);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: endpoints.mines.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries('mines');
+    }
+  });
 
   const columns = [
     { key: 'name', label: 'Mine Name' },
@@ -18,17 +51,22 @@ export function MinesSection({ data, minerals, onAdd, onEdit, onDelete }) {
     }
   ];
 
-  const fields = [
-    { name: 'name', label: 'Mine Name', type: 'text' },
-    { name: 'location', label: 'Location', type: 'text' },
-    { name: 'company', label: 'Company', type: 'text' },
-    { 
-      name: 'minerals', 
-      label: 'Minerals', 
-      type: 'multiselect',
-      options: minerals?.map(m => ({ value: m.id, label: m.name })) || [] 
-    }
-  ];
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        Failed to load mines data. Please try again later.
+        {error.message && <p className="text-sm mt-1">{error.message}</p>}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -44,13 +82,17 @@ export function MinesSection({ data, minerals, onAdd, onEdit, onDelete }) {
       </div>
 
       <DataTable
-        data={data}
+        data={mines || []}
         columns={columns}
         onEdit={(mine) => {
           setEditingMine(mine);
           setShowModal(true);
         }}
-        onDelete={onDelete}
+        onDelete={(id) => {
+          if (window.confirm('Are you sure you want to delete this mine?')) {
+            deleteMutation.mutate(id);
+          }
+        }}
       />
 
       <ManagementModal
@@ -62,14 +104,17 @@ export function MinesSection({ data, minerals, onAdd, onEdit, onDelete }) {
         }}
         onSubmit={(data) => {
           if (editingMine) {
-            onEdit(editingMine.id, data);
+            updateMutation.mutate({ id: editingMine.id, data });
           } else {
-            onAdd(data);
+            createMutation.mutate(data);
           }
-          setShowModal(false);
-          setEditingMine(null);
         }}
-        fields={fields}
+        fields={[
+          { name: 'name', label: 'Mine Name', type: 'text' },
+          { name: 'location', label: 'Location', type: 'text' },
+          { name: 'company', label: 'Company', type: 'text' },
+          { name: 'province', label: 'Province', type: 'text' }
+        ]}
         data={editingMine}
       />
     </div>
