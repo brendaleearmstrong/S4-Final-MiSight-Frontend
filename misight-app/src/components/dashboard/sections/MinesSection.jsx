@@ -1,31 +1,69 @@
+// src/components/dashboard/sections/MinesSection.jsx
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '../DataTable';
 import { ManagementModal } from '../ManagementModal';
 import { Plus } from 'lucide-react';
-import { endpoints } from '../../../services/api';
+import { endpoints } from '@/services/api';
 
 export function MinesSection() {
   const [showModal, setShowModal] = useState(false);
   const [editingMine, setEditingMine] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: mines, isLoading, error } = useQuery({
+  // Fetch mines, provinces, and minerals data
+  const { data: mines, isLoading: minesLoading } = useQuery({
     queryKey: ['mines'],
-    queryFn: endpoints.mines.getAll,
-    retry: 1
+    queryFn: endpoints.mines.getAll
   });
 
+  const { data: provinces = [] } = useQuery({
+    queryKey: ['provinces'],
+    queryFn: endpoints.provinces.getAll
+  });
+
+  const { data: minerals = [] } = useQuery({
+    queryKey: ['minerals'],
+    queryFn: endpoints.minerals.getAll
+  });
+
+  // Create mutation
   const createMutation = useMutation({
-    mutationFn: endpoints.mines.create,
+    mutationFn: async (formData) => {
+      // Transform form data to match API requirements
+      const data = {
+        name: formData.name,
+        location: formData.location,
+        company: formData.company,
+        province_id: parseInt(formData.province_id),
+        mineral_ids: formData.mineral_ids.map(id => parseInt(id))
+      };
+      
+      console.log('Creating mine with data:', data);
+      return await endpoints.mines.create(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries('mines');
       setShowModal(false);
+    },
+    onError: (error) => {
+      console.error('Failed to create mine:', error);
+      alert('Failed to create mine. Please try again.');
     }
   });
 
+  // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => endpoints.mines.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const preparedData = {
+        name: data.name,
+        location: data.location,
+        company: data.company,
+        province_id: parseInt(data.province_id),
+        mineral_ids: data.mineral_ids.map(id => parseInt(id))
+      };
+      return await endpoints.mines.update(id, preparedData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries('mines');
       setShowModal(false);
@@ -33,11 +71,10 @@ export function MinesSection() {
     }
   });
 
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: endpoints.mines.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries('mines');
-    }
+    onSuccess: () => queryClient.invalidateQueries('mines')
   });
 
   const columns = [
@@ -45,32 +82,81 @@ export function MinesSection() {
     { key: 'location', label: 'Location' },
     { key: 'company', label: 'Company' },
     { 
+      key: 'province',
+      label: 'Province',
+      render: (province) => province?.name || '-'
+    },
+    { 
       key: 'minerals', 
       label: 'Minerals',
       render: (minerals) => minerals?.map(m => m.name).join(', ') || '-'
     }
   ];
 
-  if (isLoading) {
+  const fields = [
+    { 
+      name: 'name', 
+      label: 'Mine Name', 
+      type: 'text', 
+      required: true 
+    },
+    { 
+      name: 'location', 
+      label: 'Location', 
+      type: 'text', 
+      required: true 
+    },
+    { 
+      name: 'company', 
+      label: 'Company', 
+      type: 'text', 
+      required: true 
+    },
+    { 
+      name: 'province_id', 
+      label: 'Province', 
+      type: 'select',
+      required: true,
+      options: provinces.map(province => ({
+        value: province.id.toString(),
+        label: province.name
+      }))
+    },
+    { 
+      name: 'mineral_ids', 
+      label: 'Minerals', 
+      type: 'multiselect',
+      required: true,
+      options: minerals.map(mineral => ({
+        value: mineral.id.toString(),
+        label: mineral.name
+      }))
+    }
+  ];
+
+  const handleSubmit = async (formData) => {
+    try {
+      if (editingMine) {
+        await updateMutation.mutateAsync({ id: editingMine.id, data: formData });
+      } else {
+        await createMutation.mutateAsync(formData);
+      }
+    } catch (error) {
+      console.error('Operation failed:', error);
+    }
+  };
+
+  if (minesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-        Failed to load mines data. Please try again later.
-        {error.message && <p className="text-sm mt-1">{error.message}</p>}
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex justify-between mb-6">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Mines Management</h2>
         <button
           onClick={() => setShowModal(true)}
@@ -85,7 +171,11 @@ export function MinesSection() {
         data={mines || []}
         columns={columns}
         onEdit={(mine) => {
-          setEditingMine(mine);
+          setEditingMine({
+            ...mine,
+            province_id: mine.province?.id.toString(),
+            mineral_ids: mine.minerals?.map(m => m.id.toString()) || []
+          });
           setShowModal(true);
         }}
         onDelete={(id) => {
@@ -102,19 +192,8 @@ export function MinesSection() {
           setShowModal(false);
           setEditingMine(null);
         }}
-        onSubmit={(data) => {
-          if (editingMine) {
-            updateMutation.mutate({ id: editingMine.id, data });
-          } else {
-            createMutation.mutate(data);
-          }
-        }}
-        fields={[
-          { name: 'name', label: 'Mine Name', type: 'text' },
-          { name: 'location', label: 'Location', type: 'text' },
-          { name: 'company', label: 'Company', type: 'text' },
-          { name: 'province', label: 'Province', type: 'text' }
-        ]}
+        onSubmit={handleSubmit}
+        fields={fields}
         data={editingMine}
       />
     </div>

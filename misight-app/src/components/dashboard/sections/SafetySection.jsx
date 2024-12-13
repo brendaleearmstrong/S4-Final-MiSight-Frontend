@@ -1,127 +1,147 @@
+// src/components/dashboard/sections/SafetySection.jsx
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '../DataTable';
 import { ManagementModal } from '../ManagementModal';
 import { Plus } from 'lucide-react';
+import { endpoints } from '@/services/api';
 
 export function SafetySection() {
   const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingSafety, setEditingSafety] = useState(null);
+  const queryClient = useQueryClient();
 
-  // Mock data for Phase 1
-  const [safetyData] = useState([
-    {
-      id: 1,
-      date: '2024-03-01',
-      mine: 'Voiseys Bay',
-      lostTimeIncidents: 0,
-      nearMisses: 2,
-      safetyLevel: 'GOOD'
+  const { data: safetyData, isLoading } = useQuery({
+    queryKey: ['safetyData'],
+    queryFn: endpoints.safetyData.getAll
+  });
+
+  const { data: mines = [] } = useQuery({
+    queryKey: ['mines'],
+    queryFn: endpoints.mines.getAll
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (formData) => {
+      const data = {
+        dateRecorded: formData.dateRecorded,
+        mineId: parseInt(formData.mine_id),
+        lostTimeIncidents: parseInt(formData.lostTimeIncidents),
+        nearMisses: parseInt(formData.nearMisses),
+        safetyLevel: formData.safetyLevel
+      };
+      return await endpoints.safetyData.create(data);
     },
-    {
-      id: 2,
-      date: '2024-03-02',
-      mine: 'Long Harbour',
-      lostTimeIncidents: 1,
-      nearMisses: 3,
-      safetyLevel: 'FAIR'
-    },
-    {
-      id: 3,
-      date: '2024-03-03',
-      mine: 'Scully Mine',
-      lostTimeIncidents: 0,
-      nearMisses: 1,
-      safetyLevel: 'EXCELLENT'
-    },
-    {
-      id: 4,
-      date: '2024-03-04',
-      mine: 'Pine Cove',
-      lostTimeIncidents: 2,
-      nearMisses: 4,
-      safetyLevel: 'NEEDS_IMPROVEMENT'
+    onSuccess: () => {
+      queryClient.invalidateQueries('safetyData');
+      setShowModal(false);
     }
-  ]);
+  });
 
   const columns = [
-    { key: 'date', label: 'Date' },
-    { key: 'mine', label: 'Mine' },
+    { key: 'dateRecorded', label: 'Date' },
+    { 
+      key: 'mine', 
+      label: 'Mine',
+      render: (mine) => mine?.name || '-'
+    },
     { key: 'lostTimeIncidents', label: 'Lost Time Incidents' },
     { key: 'nearMisses', label: 'Near Misses' },
-    { 
-      key: 'safetyLevel', 
-      label: 'Safety Level',
-      render: (value) => {
-        const colors = {
-          EXCELLENT: 'text-green-600',
-          GOOD: 'text-blue-600',
-          FAIR: 'text-yellow-600',
-          NEEDS_IMPROVEMENT: 'text-red-600'
-        };
-        return <span className={colors[value] || ''}>{value}</span>;
-      }
-    }
+    { key: 'safetyLevel', label: 'Safety Level' }
   ];
 
   const fields = [
-    { name: 'date', label: 'Date', type: 'date' },
-    { name: 'mine', label: 'Mine', type: 'text' },
-    { name: 'lostTimeIncidents', label: 'Lost Time Incidents', type: 'number' },
-    { name: 'nearMisses', label: 'Near Misses', type: 'number' },
+    { 
+      name: 'dateRecorded', 
+      label: 'Date', 
+      type: 'date', 
+      required: true 
+    },
+    { 
+      name: 'mine_id', 
+      label: 'Mine', 
+      type: 'select',
+      required: true,
+      options: mines.map(mine => ({
+        value: mine.id.toString(),
+        label: mine.name
+      }))
+    },
+    { 
+      name: 'lostTimeIncidents', 
+      label: 'Lost Time Incidents', 
+      type: 'number',
+      required: true,
+      min: 0
+    },
+    { 
+      name: 'nearMisses', 
+      label: 'Near Misses', 
+      type: 'number',
+      required: true,
+      min: 0
+    },
     { 
       name: 'safetyLevel', 
       label: 'Safety Level', 
       type: 'select',
-      options: ['EXCELLENT', 'GOOD', 'FAIR', 'NEEDS_IMPROVEMENT']
+      required: true,
+      options: [
+        { value: 'EXCELLENT', label: 'Excellent' },
+        { value: 'GOOD', label: 'Good' },
+        { value: 'FAIR', label: 'Fair' },
+        { value: 'NEEDS_IMPROVEMENT', label: 'Needs Improvement' },
+        { value: 'CRITICAL', label: 'Critical' }
+      ]
     }
   ];
 
   return (
-    <div>
-      <div className="flex justify-between mb-6">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Safety Data Management</h2>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center px-4 py-2 bg-amber-500 text-black rounded hover:bg-amber-600"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Safety Report
+          Add Safety Record
         </button>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-        <p className="text-amber-800">
-          Phase 1 Preview: Showing mock safety data for demonstration. API integration planned for Phase 2.
-        </p>
-      </div>
-
       <DataTable
-        data={safetyData}
+        data={safetyData || []}
         columns={columns}
-        onEdit={(item) => {
-          setEditingItem(item);
+        onEdit={(record) => {
+          setEditingSafety(record);
           setShowModal(true);
         }}
-        onDelete={(id) => console.log('Delete safety record:', id)}
+        onDelete={(id) => {
+          if (window.confirm('Are you sure you want to delete this safety record?')) {
+            endpoints.safetyData.delete(id);
+            queryClient.invalidateQueries('safetyData');
+          }
+        }}
       />
 
-      {showModal && (
-        <ManagementModal
-          title="Safety Report"
-          isOpen={showModal}
-          onClose={() => {
-            setShowModal(false);
-            setEditingItem(null);
-          }}
-          fields={fields}
-          data={editingItem}
-          onSubmit={(data) => {
-            console.log('Submit safety report:', data);
-            setShowModal(false);
-            setEditingItem(null);
-          }}
-        />
-      )}
+      <ManagementModal
+        title="Safety Record"
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setEditingSafety(null);
+        }}
+        onSubmit={(data) => {
+          if (editingSafety) {
+            // Handle update
+            endpoints.safetyData.update(editingSafety.id, data);
+          } else {
+            createMutation.mutate(data);
+          }
+        }}
+        fields={fields}
+        data={editingSafety}
+      />
     </div>
   );
 }
