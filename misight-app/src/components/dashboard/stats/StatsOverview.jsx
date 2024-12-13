@@ -1,30 +1,42 @@
-// src/components/dashboard/stats/StatsOverview.jsx
+import { useQueries } from '@tanstack/react-query';
 import { StatsCard } from './StatsCard';
 import { Users, Mountain, Activity, Bell } from 'lucide-react';
+import { endpoints } from '../../../services/api';
 
-export function StatsOverview({ data }) {
+export function StatsOverview() {
+  const results = useQueries({
+    queries: [
+      { queryKey: ['mines'], queryFn: endpoints.mines.getAll },
+      { queryKey: ['users'], queryFn: endpoints.users.getAll },
+      { queryKey: ['minerals'], queryFn: endpoints.minerals.getAll }
+    ]
+  });
+
+  const [mines, users, minerals] = results;
+  const alerts = 0; // This would come from a real alerts endpoint
+
   const stats = [
     {
       title: 'Total Mines',
-      value: data?.mines?.length || 0,
+      value: mines.data?.length || 0,
       trend: 5,
       icon: Mountain
     },
     {
       title: 'Active Users',
-      value: data?.users?.length || 0,
+      value: users.data?.length || 0,
       trend: 12,
       icon: Users
     },
     {
       title: 'Active Minerals',
-      value: data?.minerals?.length || 0,
+      value: minerals.data?.length || 0,
       trend: 3,
       icon: Activity
     },
     {
       title: 'Alerts',
-      value: data?.alerts || 0,
+      value: alerts,
       trend: -8,
       icon: Bell
     }
