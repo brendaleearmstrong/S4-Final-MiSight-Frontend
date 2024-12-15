@@ -1,178 +1,172 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
-import { DataTable } from '@/components/dashboard/DataTable';
 import { ManagementModal } from '@/components/dashboard/ManagementModal';
+import { SCULLY_MINE } from '@/services/api';
+import { MineAdminSafetyReport } from './MineSafetyDataReport';
 import api from '@/services/api';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
-const SCULLY_MINE_ID = 3;
+const MOCK_DATA = {
+  safetyData: [
+    {
+      id: 1,
+      dateRecorded: '2024-12-01',
+      lostTimeIncidents: 0,
+      nearMisses: 1,
+      safetyLevel: 'GOOD',
+    },
+    {
+      id: 2,
+      dateRecorded: '2024-12-02',
+      lostTimeIncidents: 1,
+      nearMisses: 2,
+      safetyLevel: 'FAIR',
+    },
+  ],
+};
+
+const fields = [
+  {
+    name: 'lostTimeIncidents',
+    label: 'Lost Time Incidents',
+    type: 'number',
+    required: true,
+    min: 0,
+  },
+  {
+    name: 'nearMisses',
+    label: 'Near Misses',
+    type: 'number',
+    required: true,
+    min: 0,
+  },
+  {
+    name: 'safetyLevel',
+    label: 'Safety Level',
+    type: 'select',
+    required: true,
+    options: [
+      { value: 'CRITICAL', label: 'Critical' },
+      { value: 'FAIR', label: 'Fair' },
+      { value: 'GOOD', label: 'Good' },
+      { value: 'EXCELLENT', label: 'Excellent' },
+    ],
+  },
+  {
+    name: 'notes',
+    label: 'Notes',
+    type: 'textarea',
+  },
+];
 
 export function SafetyDataSection() {
   const [showModal, setShowModal] = useState(false);
-  const [editingData, setEditingData] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: safetyData, isLoading } = useQuery({
-    queryKey: ['safety-data', SCULLY_MINE_ID],
-    queryFn: () => api.safetyData.getByMine(SCULLY_MINE_ID)
+  const { data: safetyData } = useQuery({
+    queryKey: ['safety-data', SCULLY_MINE.id],
+    queryFn: async () => {
+      try {
+        return await api.endpoints.safetyData.getByMine(SCULLY_MINE.id);
+      } catch (error) {
+        console.warn('Safety API failed, using mock data:', error);
+        return MOCK_DATA.safetyData;
+      }
+    },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const preparedData = {
-        ...data,
-        mineId: SCULLY_MINE_ID,
-        dateRecorded: new Date().toISOString(),
+        mine: { id: SCULLY_MINE.id },
         lostTimeIncidents: parseInt(data.lostTimeIncidents),
-        nearMisses: parseInt(data.nearMisses)
+        nearMisses: parseInt(data.nearMisses),
+        safetyLevel: data.safetyLevel,
+        dateRecorded: new Date().toISOString().split('T')[0],
+        notes: data.notes || '',
       };
-      return await api.safetyData.create(preparedData);
+
+      return await api.endpoints.safetyData.create(preparedData);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['safety-data', SCULLY_MINE_ID]);
+    onSuccess: (newData) => {
+      queryClient.setQueryData(['safety-data', SCULLY_MINE.id], (old) => [
+        ...(old || []),
+        newData,
+      ]);
       setShowModal(false);
-    }
+    },
   });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => {
-      return api.safetyData.update(id, {
-        ...data,
-        mineId: SCULLY_MINE_ID,
-        lostTimeIncidents: parseInt(data.lostTimeIncidents),
-        nearMisses: parseInt(data.nearMisses)
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['safety-data', SCULLY_MINE_ID]);
-      setShowModal(false);
-      setEditingData(null);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => api.safetyData.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['safety-data', SCULLY_MINE_ID]);
-    }
-  });
-
-  const columns = [
-    { 
-      key: 'dateRecorded', 
-      label: 'Date',
-      render: (date) => new Date(date).toLocaleDateString()
-    },
-    { 
-      key: 'lostTimeIncidents', 
-      label: 'Lost Time Incidents'
-    },
-    { 
-      key: 'nearMisses', 
-      label: 'Near Misses'
-    },
-    { 
-      key: 'safetyLevel', 
-      label: 'Safety Level',
-      render: (level) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          level === 'CRITICAL' ? 'bg-red-100 text-red-800' :
-          level === 'FAIR' ? 'bg-yellow-100 text-yellow-800' :
-          level === 'GOOD' ? 'bg-green-100 text-green-800' :
-          level === 'EXCELLENT' ? 'bg-blue-100 text-blue-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {level}
-        </span>
-      )
-    }
-  ];
-
-  const fields = [
-    {
-      name: 'lostTimeIncidents',
-      label: 'Lost Time Incidents',
-      type: 'number',
-      required: true,
-      min: 0
-    },
-    {
-      name: 'nearMisses',
-      label: 'Near Misses',
-      type: 'number',
-      required: true,
-      min: 0
-    },
-    {
-      name: 'safetyLevel',
-      label: 'Safety Level',
-      type: 'select',
-      required: true,
-      options: [
-        { value: 'EXCELLENT', label: 'Excellent' },
-        { value: 'GOOD', label: 'Good' },
-        { value: 'FAIR', label: 'Fair' },
-        { value: 'CRITICAL', label: 'Critical' }
-      ]
-    },
-    {
-      name: 'notes',
-      label: 'Notes',
-      type: 'textarea'
-    }
-  ];
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Safety Reports - Scully Mine</h2>
+    <div className="p-6 bg-white text-gray-900 rounded-lg shadow">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Safety Report</h2>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center px-4 py-2 bg-amber-500 text-black rounded-lg hover:bg-amber-600"
+          className="flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
         >
           <Plus className="h-5 w-5 mr-2" />
-          Add Safety Report
+          New Safety Report
         </button>
       </div>
 
-      <DataTable
-        data={safetyData || []}
-        columns={columns}
-        onEdit={(record) => {
-          setEditingData(record);
-          setShowModal(true);
-        }}
-        onDelete={(id) => {
-          if (window.confirm('Are you sure you want to delete this safety report?')) {
-            deleteMutation.mutate(id);
-          }
-        }}
-      />
+      {/* Visualization */}
+      <div className="bg-dark-blue p-4 rounded-lg shadow mb-6">
+        <h3 className="text-white text-lg font-semibold mb-4">Safety Trends</h3>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={safetyData}>
+              <CartesianGrid stroke="#F59E0B" strokeDasharray="3 3" />
+              <XAxis
+                dataKey="dateRecorded"
+                stroke="#FFFFFF"
+                tickFormatter={(date) => new Date(date).toLocaleDateString()}
+              />
+              <YAxis stroke="#FFFFFF" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1E3A8A',
+                  color: '#FFFFFF',
+                  border: 'none',
+                }}
+                labelStyle={{ color: '#F59E0B' }}
+              />
+              <Line
+                type="monotone"
+                dataKey="lostTimeIncidents"
+                stroke="#F59E0B"
+                strokeWidth={2}
+                name="Lost Time Incidents"
+              />
+              <Line
+                type="monotone"
+                dataKey="nearMisses"
+                stroke="#FFFFFF"
+                strokeWidth={2}
+                name="Near Misses"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <MineAdminSafetyReport data={safetyData} />
 
       <ManagementModal
         title="Safety Report"
         isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditingData(null);
-        }}
-        onSubmit={(data) => {
-          if (editingData) {
-            updateMutation.mutate({ id: editingData.id, data });
-          } else {
-            createMutation.mutate(data);
-          }
-        }}
+        onClose={() => setShowModal(false)}
+        onSubmit={createMutation.mutate}
         fields={fields}
-        data={editingData}
       />
     </div>
   );

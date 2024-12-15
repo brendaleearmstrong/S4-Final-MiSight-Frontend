@@ -12,5 +12,15 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      input: path.resolve(__dirname, 'index.html')
+    }
   }
 })

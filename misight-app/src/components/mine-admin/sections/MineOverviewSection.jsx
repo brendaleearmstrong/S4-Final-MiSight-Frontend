@@ -1,29 +1,98 @@
 import { useQuery } from '@tanstack/react-query';
-import { Building2, Activity, AlertTriangle, Clock, TrendingUp, Mountain } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import api from '@/services/api';
+import { Activity, AlertTriangle, Clock, TrendingUp, Mountain } from 'lucide-react';
+import api, { SCULLY_MINE_ID } from '@/services/api';
 
-const SCULLY_MINE_ID = 3;
+const MOCK_DATA = {
+  mineData: {
+    id: SCULLY_MINE_ID,
+    name: 'Scully Mine',
+    location: 'Wabush, NL',
+    company: 'Tacora Resources',
+    minerals: ['Iron Ore'],
+    active: true
+  },
+  environmentalData: [
+    {
+      id: 1,
+      measurementDate: '2024-12-01',
+      measuredValue: 45,
+      pollutant: { name: 'PM10', benchmarkValue: 50, unit: 'μg/m³' }
+    },
+    {
+      id: 2,
+      measurementDate: '2024-12-02',
+      measuredValue: 42,
+      pollutant: { name: 'PM10', benchmarkValue: 50, unit: 'μg/m³' }
+    }
+  ],
+  safetyData: [
+    {
+      id: 1,
+      dateRecorded: '2024-12-01',
+      lostTimeIncidents: 0,
+      nearMisses: 1,
+      safetyLevel: 'GOOD'
+    },
+    {
+      id: 2,
+      dateRecorded: '2024-12-02',
+      lostTimeIncidents: 1,
+      nearMisses: 2,
+      safetyLevel: 'FAIR'
+    }
+  ],
+  minerals: [
+    { id: 1, name: 'Iron Ore', type: 'Metallic' }
+  ]
+};
 
 export function MineOverviewSection() {
   const { data: mineData, isLoading: mineLoading } = useQuery({
     queryKey: ['mine', SCULLY_MINE_ID],
-    queryFn: () => api.mines.getById(SCULLY_MINE_ID)
+    queryFn: async () => {
+      try {
+        return await api.endpoints.mines.getById(SCULLY_MINE_ID);
+      } catch (error) {
+        console.warn('Mine data API failed:', error);
+        return MOCK_DATA.mineData;
+      }
+    }
   });
 
   const { data: environmentalData, isLoading: envLoading } = useQuery({
     queryKey: ['environmental-data', SCULLY_MINE_ID],
-    queryFn: () => api.environmentalData.getByMine(SCULLY_MINE_ID)
+    queryFn: async () => {
+      try {
+        return await api.endpoints.environmentalData.getByMine(SCULLY_MINE_ID);
+      } catch (error) {
+        console.warn('Environmental data API failed:', error);
+        return MOCK_DATA.environmentalData;
+      }
+    }
   });
 
   const { data: safetyData, isLoading: safetyLoading } = useQuery({
     queryKey: ['safety-data', SCULLY_MINE_ID],
-    queryFn: () => api.safetyData.getByMine(SCULLY_MINE_ID)
+    queryFn: async () => {
+      try {
+        return await api.endpoints.safetyData.getByMine(SCULLY_MINE_ID);
+      } catch (error) {
+        console.warn('Safety data API failed:', error);
+        return MOCK_DATA.safetyData;
+      }
+    }
   });
 
   const { data: minerals, isLoading: mineralsLoading } = useQuery({
     queryKey: ['minerals', SCULLY_MINE_ID],
-    queryFn: () => api.minerals.getByMine(SCULLY_MINE_ID)
+    queryFn: async () => {
+      try {
+        return await api.endpoints.minerals.getByMine(SCULLY_MINE_ID);
+      } catch (error) {
+        console.warn('Minerals API failed:', error);
+        return MOCK_DATA.minerals;
+      }
+    }
   });
 
   const isLoading = mineLoading || envLoading || safetyLoading || mineralsLoading;
@@ -64,7 +133,6 @@ export function MineOverviewSection() {
 
   return (
     <div className="space-y-6">
-      {/* Mine Info Card */}
       <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg shadow-lg p-8 text-white">
         <div className="flex items-start justify-between">
           <div>
@@ -95,7 +163,6 @@ export function MineOverviewSection() {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, index) => (
           <div key={index} className="bg-white rounded-lg shadow p-6">
@@ -115,9 +182,6 @@ export function MineOverviewSection() {
           </div>
         ))}
       </div>
-
-      {/* Charts Section */}
-      {/* Add your charts here */}
     </div>
   );
 }

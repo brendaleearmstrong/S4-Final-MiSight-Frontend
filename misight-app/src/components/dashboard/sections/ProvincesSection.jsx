@@ -1,69 +1,65 @@
-// src/components/dashboard/sections/ProvincesSection.jsx
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '../DataTable';
 import { ManagementModal } from '../ManagementModal';
 import { Plus } from 'lucide-react';
-import { endpoints } from '@/services/api';
+import axios from 'axios';
 
 export function ProvincesSection() {
   const [showModal, setShowModal] = useState(false);
   const [editingProvince, setEditingProvince] = useState(null);
   const queryClient = useQueryClient();
 
-  // Fetch provinces with their related mines data
+  // Direct fetch from API endpoint
   const { data: provinces = [], isLoading } = useQuery({
-    queryKey: ['provinces'],
+    queryKey: ['provinces-with-mines'],
     queryFn: async () => {
-      const response = await endpoints.provinces.getAll();
-      return response;
+      const response = await axios.get('http://localhost:8080/api/provinces');
+      const provincesData = response.data;
+      
+      // Fetch mine data for each province
+      const provincesWithMines = await Promise.all(
+        provincesData.map(async (province) => {
+          const minesResponse = await axios.get(`http://localhost:8080/api/mines?province=${province.id}`);
+          return {
+            ...province,
+            mines: minesResponse.data || []
+          };
+        })
+      );
+      
+      return provincesWithMines;
     }
   });
 
   const createMutation = useMutation({
-    mutationFn: async (formData) => {
-      const data = {
-        name: formData.name,
-        abbreviation: formData.abbreviation
-      };
-      const response = await endpoints.provinces.create(data);
-      return response;
+    mutationFn: async (data) => {
+      return await axios.post('http://localhost:8080/api/provinces', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('provinces');
+      queryClient.invalidateQueries(['provinces-with-mines']);
       setShowModal(false);
-    },
-    onError: (error) => {
-      console.error('Failed to create province:', error);
-      alert('Failed to create province. Please try again.');
     }
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await endpoints.provinces.update(id, data);
-      return response;
+      return await axios.put(`http://localhost:8080/api/provinces/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('provinces');
+      queryClient.invalidateQueries(['provinces-with-mines']);
       setShowModal(false);
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await endpoints.provinces.delete(id);
-      return response;
+      return await axios.delete(`http://localhost:8080/api/provinces/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('provinces');
+      queryClient.invalidateQueries(['provinces-with-mines']);
     }
   });
-
-  // Calculate statistics
-  const totalProvinces = provinces.length;
-  const totalMines = provinces.reduce((sum, province) => sum + (province.mines?.length || 0), 0);
-  const avgMinesPerProvince = totalMines / totalProvinces || 0;
 
   const columns = [
     { key: 'name', label: 'Province Name' },
@@ -71,10 +67,20 @@ export function ProvincesSection() {
     { 
       key: 'mines', 
       label: 'Active Mines',
-      render: (mines) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          {mines?.length || 0} mines
-        </span>
+      render: (mines, province) => (
+        <div className="flex items-center">
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium 
+            ${(mines?.length || 0) > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}
+          >
+            {mines?.length || 0} {(mines?.length || 0) === 1 ? 'mine' : 'mines'}
+          </span>
+          {mines?.length > 0 && (
+            <div className="ml-2 text-xs text-gray-500">
+              {mines.slice(0, 2).map(mine => mine.name).join(', ')}
+              {mines.length > 2 && '...'}
+            </div>
+          )}
+        </div>
       )
     }
   ];
@@ -91,7 +97,7 @@ export function ProvincesSection() {
       label: 'Province Code', 
       type: 'text', 
       required: true,
-      maxLength: 2
+      maxLength: 2 
     }
   ];
 
@@ -103,22 +109,28 @@ export function ProvincesSection() {
     );
   }
 
+  // Calculate statistics
+  const stats = {
+    totalProvinces: provinces.length,
+    totalMines: provinces.reduce((total, province) => total + (province.mines?.length || 0), 0),
+    avgMinesPerProvince: (provinces.reduce((total, province) => 
+      total + (province.mines?.length || 0), 0) / Math.max(provinces.length, 1)).toFixed(1)
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-blue-700">{totalProvinces}</div>
+            <div className="text-2xl font-bold text-blue-700">{stats.totalProvinces}</div>
             <div className="text-sm text-blue-600">Total Provinces</div>
           </div>
           <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-700">{totalMines}</div>
+            <div className="text-2xl font-bold text-green-700">{stats.totalMines}</div>
             <div className="text-sm text-green-600">Total Active Mines</div>
           </div>
           <div className="bg-amber-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-amber-700">
-              {avgMinesPerProvince.toFixed(1)}
-            </div>
+            <div className="text-2xl font-bold text-amber-700">{stats.avgMinesPerProvince}</div>
             <div className="text-sm text-amber-600">Average Mines per Province</div>
           </div>
         </div>

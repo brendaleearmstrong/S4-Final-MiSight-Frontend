@@ -51,7 +51,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="border-t border-gray-800 pt-8 text-center">
+        <div className="border-t border-amber-500 pt-8 text-center">
           <p>&copy; {new Date().getFullYear()} MiSight. All rights reserved.</p>
         </div>
       </div>
