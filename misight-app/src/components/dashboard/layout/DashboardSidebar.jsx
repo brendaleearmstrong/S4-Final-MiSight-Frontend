@@ -1,4 +1,4 @@
-import { Shield, Users, Mountain, Activity, AlertTriangle, Bell, Cloud } from 'lucide-react';
+import { Shield, Users, Mountain, Activity, AlertTriangle, Bell, Cloud, RadioTower } from 'lucide-react';
 
 export function DashboardSidebar({ activeTab, onTabChange }) {
   const sidebarItems = [
@@ -6,6 +6,7 @@ export function DashboardSidebar({ activeTab, onTabChange }) {
     { id: 'mines', label: 'Mines', icon: Mountain },
     { id: 'minerals', label: 'Minerals', icon: Activity },
     { id: 'pollutants', label: 'Pollutants', icon: AlertTriangle },
+    { id: 'monitoring', label: 'Monitoring Stations', icon: RadioTower },
     { id: 'provinces', label: 'Provinces', icon: Shield },
     { id: 'safety', label: 'Safety Data', icon: Bell },
     { id: 'environment', label: 'Environment', icon: Cloud }
@@ -36,3 +37,5 @@ export function DashboardSidebar({ activeTab, onTabChange }) {
     </div>
   );
 }
+
+export default DashboardSidebar;
