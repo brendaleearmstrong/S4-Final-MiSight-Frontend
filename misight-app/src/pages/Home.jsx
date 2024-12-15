@@ -94,89 +94,60 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="mt-24 border-t border-gray-800 bg-[#1A1F2B]">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div>
-              <div className="flex items-center mb-6">
-                <span className="text-amber-500 text-3xl font-bold">◆</span>
-                <span className="text-3xl font-bold text-white ml-2">MiSight</span>
-              </div>
-              <p className="text-gray-400 mb-6">
-                Transforming mining operations through innovative technology and data-driven insights.
-              </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-amber-500 transition-colors">
-                  <Facebook size={20} />
-                </a>
-                <a href="#" className="text-gray-400 hover:text-amber-500 transition-colors">
-                  <Twitter size={20} />
-                </a>
-                <a href="#" className="text-gray-400 hover:text-amber-500 transition-colors">
-                  <Linkedin size={20} />
-                </a>
-              </div>
+      <footer className="bg-gray-900 text-gray-400 py-12">
+      <div className="container mx-auto px-4">
+        <div className="grid md:grid-cols-4 gap-8 mb-8">
+          <div>
+            <div className="flex items-center mb-4">
+              <svg className="w-8 h-8 text-amber-500" viewBox="0 0 40 40">
+                <path
+                  fill="currentColor"
+                  d="M20 5L30 15L20 25L10 15L20 5ZM20 35L10 25L20 15L30 25L20 35Z"
+                />
+              </svg>
+              <span className="ml-2 text-xl font-bold text-white">MiSight</span>
             </div>
-
-            <div>
-              <h3 className="text-white font-semibold text-lg mb-6">Quick Links</h3>
-              <ul className="space-y-4">
-                <li>
-                  <Link to="/about" className="text-gray-400 hover:text-amber-500 transition-colors">About Us</Link>
-                </li>
-                <li>
-                  <Link to="/features" className="text-gray-400 hover:text-amber-500 transition-colors">Features</Link>
-                </li>
-                <li>
-                  <Link to="/solutions" className="text-gray-400 hover:text-amber-500 transition-colors">Solutions</Link>
-                </li>
-                <li>
-                  <Link to="/pricing" className="text-gray-400 hover:text-amber-500 transition-colors">Pricing</Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-white font-semibold text-lg mb-6">Contact</h3>
-              <ul className="space-y-4">
-                <li className="flex items-center text-gray-400">
-                  <Mail size={16} className="mr-2" />
-                  <span>contact@misight.com</span>
-                </li>
-                <li className="flex items-center text-gray-400">
-                  <Phone size={16} className="mr-2" />
-                  <span>+1 (555) 123-4567</span>
-                </li>
-                <li className="flex items-center text-gray-400">
-                  <MapPin size={16} className="mr-2" />
-                  <span>St. Johns, NL, Canada</span>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-white font-semibold text-lg mb-6">Legal</h3>
-              <ul className="space-y-4">
-                <li>
-                  <Link to="/privacy" className="text-gray-400 hover:text-amber-500 transition-colors">Privacy Policy</Link>
-                </li>
-                <li>
-                  <Link to="/terms" className="text-gray-400 hover:text-amber-500 transition-colors">Terms of Service</Link>
-                </li>
-                <li>
-                  <Link to="/cookies" className="text-gray-400 hover:text-amber-500 transition-colors">Cookie Policy</Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center">
-            <p className="text-gray-400">
-              © {new Date().getFullYear()} MiSight. All rights reserved.
+            <p className="text-sm">
+              Transforming mining operations through innovative technology and data-driven insights.
             </p>
           </div>
+          <div>
+            <h4 className="text-amber-500 font-semibold mb-4">Quick Links</h4>
+            <ul className="space-y-2">
+              <li><a href="#" className="hover:text-amber-500">About Us</a></li>
+              <li><a href="#" className="hover:text-amber-500">Features</a></li>
+              <li><a href="#" className="hover:text-amber-500">Pricing</a></li>
+              <li><a href="#" className="hover:text-amber-500">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-amber-500 font-semibold mb-4">Legal</h4>
+            <ul className="space-y-2">
+              <li><a href="#" className="hover:text-amber-500">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-amber-500">Terms of Service</a></li>
+              <li><a href="#" className="hover:text-amber-500">Cookie Policy</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-amber-500 font-semibold mb-4">Follow Us</h4>
+            <div className="flex space-x-4">
+              <a href="#" className="hover:text-amber-500">
+                <Facebook />
+              </a>
+              <a href="#" className="hover:text-amber-500">
+                <Twitter />
+              </a>
+              <a href="#" className="hover:text-amber-500">
+                <Linkedin />
+              </a>
+            </div>
+          </div>
         </div>
-      </footer>
+        <div className="border-t border-amber-500 pt-8 text-center">
+          <p>&copy; {new Date().getFullYear()} MiSight. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
     </div>
   );
 }
