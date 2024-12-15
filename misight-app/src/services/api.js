@@ -1,4 +1,3 @@
-// src/services/api.js
 import axios from 'axios';
 
 const axiosInstance = axios.create({
@@ -99,6 +98,41 @@ export const endpoints = {
     getById: async (id) => {
       const response = await axiosInstance.get(`/provinces/${id}`);
       return response.data;
+    },
+    create: async (data) => {
+      const response = await axiosInstance.post('/provinces', data);
+      return response.data;
+    },
+    update: async (id, data) => {
+      const response = await axiosInstance.put(`/provinces/${id}`, data);
+      return response.data;
+    },
+    delete: async (id) => {
+      const response = await axiosInstance.delete(`/provinces/${id}`);
+      return response.data;
+    }
+  },
+
+  monitoringStations: {
+    getAll: async () => {
+      const response = await axiosInstance.get('/monitoringstations');
+      return response.data;
+    },
+    getById: async (id) => {
+      const response = await axiosInstance.get(`/monitoringstations/${id}`);
+      return response.data;
+    },
+    create: async (data) => {
+      const response = await axiosInstance.post('/monitoringstations', data);
+      return response.data;
+    },
+    update: async (id, data) => {
+      const response = await axiosInstance.put(`/monitoringstations/${id}`, data);
+      return response.data;
+    },
+    delete: async (id) => {
+      const response = await axiosInstance.delete(`/monitoringstations/${id}`);
+      return response.data;
     }
   },
 
@@ -109,6 +143,18 @@ export const endpoints = {
     },
     getById: async (id) => {
       const response = await axiosInstance.get(`/pollutants/${id}`);
+      return response.data;
+    },
+    create: async (data) => {
+      const response = await axiosInstance.post('/pollutants', data);
+      return response.data;
+    },
+    update: async (id, data) => {
+      const response = await axiosInstance.put(`/pollutants/${id}`, data);
+      return response.data;
+    },
+    delete: async (id) => {
+      const response = await axiosInstance.delete(`/pollutants/${id}`);
       return response.data;
     }
   },
@@ -131,6 +177,18 @@ export const endpoints = {
     },
     getByMine: async (mineId) => {
       const response = await axiosInstance.get(`/safety-data/mine/${mineId}`);
+      return response.data;
+    },
+    create: async (data) => {
+      const response = await axiosInstance.post('/safety-data', data);
+      return response.data;
+    },
+    update: async (id, data) => {
+      const response = await axiosInstance.put(`/safety-data/${id}`, data);
+      return response.data;
+    },
+    delete: async (id) => {
+      const response = await axiosInstance.delete(`/safety-data/${id}`);
       return response.data;
     }
   }

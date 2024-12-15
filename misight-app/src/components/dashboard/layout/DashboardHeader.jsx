@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 export function DashboardHeader() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem('user')) || {};
 
   return (
     <header className="bg-white shadow-sm">
