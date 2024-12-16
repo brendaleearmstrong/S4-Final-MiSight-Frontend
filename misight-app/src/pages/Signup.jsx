@@ -1,79 +1,137 @@
-<form onSubmit={handleSubmit} className="space-y-6">
-  <div>
-    <label
-      htmlFor="username"
-      className="block text-sm font-medium text-gray-200 mb-1"
-    >
-      Username
-    </label>
-    <input
-      id="username"
-      type="text"
-      required
-      value={formData.username}
-      onChange={(e) =>
-        setFormData({ ...formData, username: e.target.value })
-      }
-      className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:border-amber-500"
-    />
-  </div>
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-  <div>
-    <label
-      htmlFor="password"
-      className="block text-sm font-medium text-gray-200 mb-1"
-    >
-      Password
-    </label>
-    <input
-      id="password"
-      type="password"
-      required
-      value={formData.password}
-      onChange={(e) =>
-        setFormData({ ...formData, password: e.target.value })
-      }
-      className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:border-amber-500"
-    />
-  </div>
+const Signup = () => {
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'USER'  // Added role field
+    });
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
 
-  <div>
-    <label
-      htmlFor="confirm-password"
-      className="block text-sm font-medium text-gray-200 mb-1"
-    >
-      Confirm Password
-    </label>
-    <input
-      id="confirm-password"
-      type="password"
-      required
-      value={formData.confirmPassword}
-      onChange={(e) =>
-        setFormData({ ...formData, confirmPassword: e.target.value })
-      }
-      className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:border-amber-500"
-    />
-  </div>
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        });
+    };
 
-  <div>
-    <label
-      htmlFor="role"
-      className="block text-sm font-medium text-gray-200 mb-1"
-    >
-      Role
-    </label>
-    <select
-      id="role"
-      required
-      value={formData.role}
-      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-      className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:border-amber-500"
-    >
-      <option value="">Select Role</option>
-      <option value="ADMIN">Administrator</option>
-      <option value="MINE_ADMIN">Mine Administrator</option>
-      <option value="USER">Public Stakeholder</option>
-    </select>
-  </div>
-</form>
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        const { username, email, password, confirmPassword, role } = formData;
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        try {
+            const response = await axios.post('/api/signup', { username, email, password, role });
+            if (response.status === 201) {
+                navigate('/login');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'An error occurred during signup');
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
+            <div className="w-full max-w-md bg-surface rounded-lg shadow-lg p-8">
+                <h1 className="text-2xl font-bold text-white mb-6 text-center">Sign Up</h1>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-200">
+                            Username
+                        </label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-200">
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label htmlFor="role" className="block text-sm font-medium text-gray-200">
+                            Role
+                        </label>
+                        <select
+                            id="role"
+                            name="role"
+                            value={formData.role}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        >
+                            <option value="USER">User</option>
+                            <option value="MINE_ADMIN">Mine Admin</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-200">
+                            Password
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200">
+                            Confirm Password
+                        </label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                    </div>
+                    {error && (
+                        <p className="text-red-500 text-sm mt-2">{error}</p>
+                    )}
+                    <button
+                        type="submit"
+                        className="w-full px-4 py-2 bg-primary text-black font-medium rounded-lg hover:bg-primary-dark transition-colors duration-200"
+                    >
+                        Create Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default Signup;
