@@ -1,19 +1,16 @@
-// App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Signup from './pages/Signup';  // Changed from { Signup }
+import Signup from './pages/Signup';  
 import Features from './pages/Features';
 import Solutions from './pages/Solutions';
 import Contact from './pages/Contact';
 import About from './pages/About';
 import Pricing from './pages/Pricing';
 
-// Dashboards
 import AdminDashboard from './pages/dashboards/AdminDashboard';
 import MineAdminDashboard from './pages/dashboards/MineAdminDashboard';
 import UserDashboard from './pages/dashboards/UserDashboard';
@@ -43,7 +40,6 @@ const App = () => {
           <Route path="/about" element={<About />} />
           <Route path="/pricing" element={<Pricing />} />
 
-          {/* Protected Dashboard Routes */}
           <Route
             path="/pages/AdminDashboard/*"
             element={

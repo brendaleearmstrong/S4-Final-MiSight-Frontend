@@ -1,47 +1,110 @@
 // src/__tests__/pages/Signup.test.jsx
-import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { BrowserRouter as Router } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
+import { BrowserRouter } from 'react-router-dom';
 import Signup from '../../pages/Signup';
 
-describe('Signup Page', () => {
-  test('renders the signup form', () => {
-    render(
-      <Router>
-        <Signup />
-      </Router>
-    );
+// Mock navigate
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
 
-    expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument(); // Added ^ and $ to match exact text
-    expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
-  });
+// Mock axios
+vi.mock('axios', () => ({
+    default: {
+        post: vi.fn(() => Promise.resolve({ status: 201 }))
+    }
+}));
 
-  test('validates input fields and submits the form', () => {
-    render(
-      <Router>
-        <Signup />
-      </Router>
-    );
+describe('Signup Component', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        localStorage.clear();
+    });
 
-    const usernameInput = screen.getByLabelText(/username/i);
-    const passwordInput = screen.getByLabelText(/^password$/i); // Added ^ and $ to match exact text
-    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
-    const roleSelect = screen.getByLabelText(/role/i);
-    const signupButton = screen.getByRole('button', { name: /create account/i });
+    const renderSignup = () => {
+        return render(
+            <BrowserRouter>
+                <Signup />
+            </BrowserRouter>
+        );
+    };
 
-    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
-    fireEvent.change(roleSelect, { target: { value: 'USER' } });
-    fireEvent.click(signupButton);
+    it('renders signup form', () => {
+        renderSignup();
+        
+        expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
+    });
 
-    expect(usernameInput.value).toBe('testuser');
-    expect(passwordInput.value).toBe('password123');
-    expect(confirmPasswordInput.value).toBe('password123');
-    expect(roleSelect.value).toBe('USER');
-  });
+    it('shows error when passwords do not match', async () => {
+        renderSignup();
+        
+        await userEvent.type(screen.getByLabelText(/username/i), 'testuser');
+        await userEvent.type(screen.getByLabelText(/^password$/i), 'password123');
+        await userEvent.type(screen.getByLabelText(/confirm password/i), 'different');
+        await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+        expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
+    });
+
+    it('handles demo admin login', async () => {
+        renderSignup();
+
+        await userEvent.type(screen.getByLabelText(/username/i), 'admin');
+        await userEvent.type(screen.getByLabelText(/^password$/i), 'admin123');
+        await userEvent.type(screen.getByLabelText(/confirm password/i), 'admin123');
+        await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/pages/AdminDashboard');
+        expect(localStorage.getItem('user')).toBeTruthy();
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        expect(storedUser.role).toBe('ADMIN');
+    });
+
+    it('handles regular user signup', async () => {
+        renderSignup();
+
+        await userEvent.type(screen.getByLabelText(/username/i), 'testuser');
+        await userEvent.type(screen.getByLabelText(/^password$/i), 'password123');
+        await userEvent.type(screen.getByLabelText(/confirm password/i), 'password123');
+        await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/login');
+    });
+
+    it('shows loading state during signup', async () => {
+        renderSignup();
+
+        await userEvent.type(screen.getByLabelText(/username/i), 'testuser');
+        await userEvent.type(screen.getByLabelText(/^password$/i), 'password123');
+        await userEvent.type(screen.getByLabelText(/confirm password/i), 'password123');
+        
+        const submitButton = screen.getByRole('button', { name: /create account/i });
+        fireEvent.click(submitButton);
+
+        expect(submitButton).toBeDisabled();
+        expect(screen.getByText('Creating Account...')).toBeInTheDocument();
+    });
+
+    it('handles signup error', async () => {
+        vi.mocked(axios.post).mockRejectedValueOnce(new Error('Signup failed'));
+        
+        renderSignup();
+
+        await userEvent.type(screen.getByLabelText(/username/i), 'testuser');
+        await userEvent.type(screen.getByLabelText(/^password$/i), 'password123');
+        await userEvent.type(screen.getByLabelText(/confirm password/i), 'password123');
+        await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+        expect(await screen.findByText(/Failed to create account/i)).toBeInTheDocument();
+    });
 });

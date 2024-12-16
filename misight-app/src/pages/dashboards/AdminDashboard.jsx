@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Shield, Users, Mountain, Activity, AlertTriangle, Bell, Cloud, RadioTower, MapPin, FileText } from 'lucide-react';
-import { UsersSection } from '../../components/dashboard/sections/UsersSection';
+import UsersSection from '../../components/dashboard/sections/UsersSection';
 import { MinesSection } from '../../components/dashboard/sections/MinesSection';
 import { MineralsSection } from '../../components/dashboard/sections/MineralsSection';
 import { PollutantsSection } from '../../components/dashboard/sections/PollutantsSection';
@@ -17,49 +17,178 @@ import { endpoints } from '@/services/api';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const queryClient = useQueryClient();
 
-  // Query hooks for fetching data
-  const { data: users, isLoading: usersLoading } = useQuery({
+  const { data: users, isLoading: usersLoading, isError: usersError } = useQuery({
     queryKey: ['users'],
-    queryFn: endpoints.users.getAll
+    queryFn: endpoints.users.getAll,
+    retry: 1,
+    retryDelay: 1000
   });
 
-  const { data: mines, isLoading: minesLoading } = useQuery({
+  const { data: mines, isLoading: minesLoading, isError: minesError } = useQuery({
     queryKey: ['mines'],
-    queryFn: endpoints.mines.getAll
+    queryFn: endpoints.mines.getAll,
+    retry: 1,
+    retryDelay: 1000
   });
 
-  const { data: minerals, isLoading: mineralsLoading } = useQuery({
+  const { data: minerals, isLoading: mineralsLoading, isError: mineralsError } = useQuery({
     queryKey: ['minerals'],
-    queryFn: endpoints.minerals.getAll
+    queryFn: endpoints.minerals.getAll,
+    retry: 1,
+    retryDelay: 1000
   });
 
-  const { data: provinces, isLoading: provincesLoading } = useQuery({
+  const { data: provinces, isLoading: provincesLoading, isError: provincesError } = useQuery({
     queryKey: ['provinces'],
-    queryFn: endpoints.provinces.getAll
+    queryFn: endpoints.provinces.getAll,
+    retry: 1,
+    retryDelay: 1000
   });
 
-  const { data: stations, isLoading: stationsLoading } = useQuery({
+  const { data: stations, isLoading: stationsLoading, isError: stationsError } = useQuery({
     queryKey: ['stations'],
-    queryFn: () => endpoints.monitoringStations.getAll()
+    queryFn: () => endpoints.monitoringStations.getAll(),
+    retry: 1,
+    retryDelay: 1000
   });
+
+  // Mutations for CRUD operations
+  const createMutation = useMutation({
+    mutationFn: (data) => {
+      switch (activeTab) {
+        case 'users':
+          return endpoints.users.create(data);
+        case 'mines':
+          return endpoints.mines.create(data);
+        case 'minerals':
+          return endpoints.minerals.create(data);
+        case 'provinces':
+          return endpoints.provinces.create(data);
+        case 'monitoringstations':
+          return endpoints.monitoringStations.create(data);
+        default:
+          throw new Error('Invalid section');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries([activeTab]);
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => {
+      switch (activeTab) {
+        case 'users':
+          return endpoints.users.update(id, data);
+        case 'mines':
+          return endpoints.mines.update(id, data);
+        case 'minerals':
+          return endpoints.minerals.update(id, data);
+        case 'provinces':
+          return endpoints.provinces.update(id, data);
+        case 'monitoringstations':
+          return endpoints.monitoringStations.update(id, data);
+        default:
+          throw new Error('Invalid section');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries([activeTab]);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => {
+      switch (activeTab) {
+        case 'users':
+          return endpoints.users.delete(id);
+        case 'mines':
+          return endpoints.mines.delete(id);
+        case 'minerals':
+          return endpoints.minerals.delete(id);
+        case 'provinces':
+          return endpoints.provinces.delete(id);
+        case 'monitoringstations':
+          return endpoints.monitoringStations.delete(id);
+        default:
+          throw new Error('Invalid section');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries([activeTab]);
+    }
+  });
+
+  const handleAdd = (data) => {
+    createMutation.mutate(data);
+  };
+
+  const handleEdit = (id, data) => {
+    updateMutation.mutate({ id, data });
+  };
+
+  const handleDelete = (id) => {
+    deleteMutation.mutate(id);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
         return <DashboardMetrics data={{ users, mines, minerals, stations }} />;
       case 'users':
-        return <UsersSection />;
+        return (
+          <UsersSection
+            data={users}
+            loading={usersLoading}
+            onAdd={handleAdd}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        );
       case 'mines':
-        return <MinesSection />;
+        return (
+          <MinesSection
+            data={mines}
+            loading={minesLoading}
+            onAdd={handleAdd}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        );
       case 'minerals':
-        return <MineralsSection />;
+        return (
+          <MineralsSection
+            data={minerals}
+            loading={mineralsLoading}
+            onAdd={handleAdd}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        );
       case 'pollutants':
         return <PollutantsSection />;
       case 'monitoring':
-        return <MonitoringStationsSection />;
+        return (
+          <MonitoringStationsSection
+            data={stations}
+            loading={stationsLoading}
+            onAdd={handleAdd}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        );
       case 'provinces':
-        return <ProvincesSection />;
+        return (
+          <ProvincesSection
+            data={provinces}
+            loading={provincesLoading}
+            onAdd={handleAdd}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        );
       case 'safety':
         return <SafetySection />;
       default:
@@ -77,8 +206,8 @@ export default function AdminDashboard() {
     { id: 'weather', label: 'Weather', icon: Cloud }
   ];
 
-  // Show loading state if any essential data is loading
-  const isLoading = usersLoading || minesLoading || mineralsLoading || provincesLoading || stationsLoading;
+  const isLoading = (usersLoading || minesLoading || mineralsLoading || provincesLoading || stationsLoading) && 
+                    !(usersError || minesError || mineralsError || provincesError || stationsError);
 
   if (isLoading) {
     return (
@@ -106,12 +235,11 @@ export default function AdminDashboard() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white">Administrator Dashboard</h1>
           </div>
-          <div className="bg-[#FFFFFF] rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
             {renderContent()}
           </div>
         </main>
       </div>
     </div>
   );
-  
 }

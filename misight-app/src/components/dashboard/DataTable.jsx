@@ -1,3 +1,4 @@
+// src/components/dashboard/DataTable.jsx
 import { Pencil, Trash2 } from 'lucide-react';
 
 export function DataTable({ data = [], columns = [], onEdit, onDelete }) {
@@ -31,12 +32,14 @@ export function DataTable({ data = [], columns = [], onEdit, onDelete }) {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => onEdit(item)}
+                    aria-label="Edit"
                     className="text-amber-600 hover:text-amber-900 mr-4"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => onDelete(item.id)}
+                    aria-label="Delete"
                     className="text-red-600 hover:text-red-900"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -50,3 +53,5 @@ export function DataTable({ data = [], columns = [], onEdit, onDelete }) {
     </div>
   );
 }
+
+export default DataTable;

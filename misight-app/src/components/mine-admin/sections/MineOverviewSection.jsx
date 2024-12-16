@@ -172,7 +172,7 @@ export function MineOverviewSection() {
                 <p className="mt-2 text-3xl font-bold">{stat.value}</p>
                 <div className="flex items-center mt-2">
                   <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-sm text-green-500">{stat.change}</span>
+                  <span className="text-sm font-medium text-green-500">{stat.change}</span>
                 </div>
               </div>
               <div className={`rounded-full p-3 ${stat.color}`}>
@@ -181,6 +181,31 @@ export function MineOverviewSection() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Mine Details</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="text-sm font-medium text-gray-500">Active Minerals</h4>
+            <div className="mt-2 space-y-1">
+              {minerals?.map(mineral => (
+                <p key={mineral.id} className="text-gray-900">{mineral.name}</p>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-gray-500">Safety Status</h4>
+            <div className="mt-2 space-y-1">
+              <p className="text-gray-900">
+                Last Incident: {formatLastIncidentDate(safetyData)}
+              </p>
+              <p className="text-gray-900">
+                Safety Level: {safetyData?.[0]?.safetyLevel || 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -199,6 +224,18 @@ function calculateDaysWithoutIncident(safetyData) {
   const today = new Date();
   const diffTime = Math.abs(today - lastIncidentDate);
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+function formatLastIncidentDate(safetyData) {
+  if (!safetyData?.length) return 'No data';
+  
+  const lastIncident = safetyData
+    .filter(d => d.lostTimeIncidents > 0)
+    .sort((a, b) => new Date(b.dateRecorded) - new Date(a.dateRecorded))[0];
+
+  if (!lastIncident) return 'No incidents recorded';
+  
+  return new Date(lastIncident.dateRecorded).toLocaleDateString();
 }
 
 export default MineOverviewSection;
