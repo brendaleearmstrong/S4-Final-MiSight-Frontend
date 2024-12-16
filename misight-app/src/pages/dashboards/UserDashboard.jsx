@@ -1,433 +1,373 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Legend, PieChart, Pie, Cell
-} from 'recharts';
-import {
-  Shield, Building2, Activity, AlertTriangle, Cloud, Bell,
-  Sun, Wind, FileText, MapPin, Info
+  Building2, Activity, AlertTriangle, Sun, Cloud, Wind, 
+  Briefcase, Shield, Users, Info, Droplets, HardHat,
+  ThermometerSun, Eye, Bell, FileText
 } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line
+} from 'recharts';
+import { SafetyDataSection } from '@/components/mine-admin/sections/SafetyDataSection';
+import { EnvironmentalDataSection } from '@/components/mine-admin/sections/EnvironmentalDataSection';
 import { useAuth } from '@/contexts/AuthContext';
-import { endpoints, SCULLY_MINE } from '@/services/api';
 
-// Constants
-const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#6B7280'];
-const PRODUCTION_DATA = [
-  { month: 'Sep 2024', actual: 520, target: 500 },
-  { month: 'Oct 2024', actual: 540, target: 500 },
-  { month: 'Nov 2024', actual: 510, target: 500 },
-  { month: 'Dec 2024', actual: 530, target: 500 }
-].map(item => ({
-  ...item,
-  actual: item.actual / 1000,
-  target: item.target / 1000
-}));
 
-const WEATHER_DATA = [
-  { date: '2024-12-15', temp: 2, wind: 25, conditions: 'Cloudy' },
-  { date: '2024-12-16', temp: 1, wind: 20, conditions: 'Snow' },
-  { date: '2024-12-17', temp: 0, wind: 15, conditions: 'Snow' },
-  { date: '2024-12-18', temp: -2, wind: 18, conditions: 'Cloudy' },
-  { date: '2024-12-19', temp: -1, wind: 22, conditions: 'Windy' }
+// Mock data
+const MOCK_PRODUCTION = [
+  { month: 'Sep', actual: 520, target: 500 },
+  { month: 'Oct', actual: 540, target: 500 },
+  { month: 'Nov', actual: 510, target: 500 },
+  { month: 'Dec', actual: 530, target: 500 }
+].map(item => ({ ...item, actual: item.actual / 1000, target: item.target / 1000 }));
+
+const MOCK_WEATHER = [
+  { date: 'Mon', temp: 2, wind: 25, conditions: 'Cloudy', icon: Cloud },
+  { date: 'Tue', temp: 1, wind: 20, conditions: 'Snow', icon: Cloud },
+  { date: 'Wed', temp: 0, wind: 15, conditions: 'Clear', icon: Sun },
+  { date: 'Thu', temp: -2, wind: 18, conditions: 'Rain', icon: Cloud },
+  { date: 'Fri', temp: -1, wind: 22, conditions: 'Windy', icon: Wind }
 ];
 
-const COMMUNITY_NOTICES = [
-  {
-    id: 1,
-    title: 'Drilling Blast Notice',
-    message: 'Scheduled blast at 10:00 AM tomorrow',
-    date: '2024-12-15',
-    type: 'alert'
-  },
-  {
-    id: 2,
-    title: 'Community Meeting',
-    message: 'Environmental review session at 6:00 PM',
-    date: '2024-12-16',
-    type: 'info'
-  },
-  {
-    id: 3,
-    title: 'Dust Alert',
-    message: 'High winds expected - additional dust suppression in effect',
-    date: '2024-12-17',
+const MOCK_JOBS = [
+  { id: 1, title: 'Heavy Equipment Operator', location: 'Wabush, NL', department: 'Operations' },
+  { id: 2, title: 'Environmental Specialist', location: 'Scully Mine', department: 'Environmental' },
+  { id: 3, title: 'Mining Engineer', location: 'Scully Mine', department: 'Engineering' }
+];
+
+const MOCK_NOTICES = [
+  { 
+    id: 1, 
+    title: 'BLAST Notice', 
+    message: 'Scheduled blast tomorrow at 10:00 AM in Section B-7.',
+    date: 'Dec 15, 2024',
     type: 'warning'
+  },
+  { 
+    id: 2, 
+    title: 'Safety Alert', 
+    message: 'Updated dust protocols in effect for next 3 days due to forecasted high winds.',
+    date: 'Dec 14, 2024',
+    type: 'alert'
   }
 ];
 
-const NEWS_ITEMS = [
+const MOCK_SAFETY_TIPS = [
   {
     id: 1,
-    title: 'Environmental Achievement',
-    content: 'Scully Mine achieves 95% dust reduction target',
-    date: '2024-12-14'
+    title: 'Dust Safety',
+    tips: [
+      'Wear appropriate PPE including dust masks when in designated areas',
+      'Check daily dust forecasts before outdoor activities',
+      'Report any unusual dust conditions to supervisors'
+    ],
+    icon: Eye
   },
   {
     id: 2,
-    title: 'Community Investment',
-    content: '$50,000 donation to local environmental initiatives',
-    date: '2024-12-13'
+    title: 'Winter Safety',
+    tips: [
+      'Maintain 3-point contact when climbing equipment',
+      'Clear snow and ice from walkways',
+      'Check weather conditions before shift start'
+    ],
+    icon: ThermometerSun
   }
 ];
 
-export default function UserDashboard() {
+const MOCK_AIR_QUALITY = [
+  { time: '6AM', pm25: 12, pm10: 25 },
+  { time: '9AM', pm25: 15, pm10: 30 },
+  { time: '12PM', pm25: 18, pm10: 35 },
+  { time: '3PM', pm25: 14, pm10: 28 },
+  { time: '6PM', pm25: 11, pm10: 22 }
+];
+
+const UserDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
-  const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  });
-
-  // Query hooks
-  const { data: environmentalData = [], isLoading: envLoading } = useQuery({
-    queryKey: ['environmental-data', SCULLY_MINE.id, dateRange],
-    queryFn: () => endpoints.environmentalData.getByMineAndDateRange(
-      SCULLY_MINE.id,
-      dateRange.start,
-      dateRange.end
-    )
-  });
-
-  const { data: safetyData = [], isLoading: safetyLoading } = useQuery({
-    queryKey: ['safety-data', SCULLY_MINE.id, dateRange],
-    queryFn: () => endpoints.safetyData.getByMineAndDateRange(
-      SCULLY_MINE.id,
-      dateRange.start,
-      dateRange.end
-    )
-  });
-
-  // Stats calculations
-  const envStats = {
-    totalReadings: environmentalData.length,
-    exceedances: environmentalData.filter(d => d.measuredValue > d.pollutant?.benchmarkValue).length,
-    complianceRate: environmentalData.length ? 
-      ((environmentalData.length - environmentalData.filter(d => d.measuredValue > d.pollutant?.benchmarkValue).length) / 
-      environmentalData.length * 100).toFixed(1) : 0
-  };
-
-  const safetyStats = {
-    incidents: safetyData.reduce((sum, record) => sum + record.lostTimeIncidents, 0),
-    nearMisses: safetyData.reduce((sum, record) => sum + record.nearMisses, 0),
-    daysWithoutIncident: calculateDaysWithoutIncident(safetyData)
-  };
-
-  function calculateDaysWithoutIncident(data) {
-    if (!data.length) return 0;
-    const lastIncident = data
-      .filter(d => d.lostTimeIncidents > 0)
-      .sort((a, b) => new Date(b.dateRecorded) - new Date(a.dateRecorded))[0];
-    
-    if (!lastIncident) return data.length;
-    
-    const lastDate = new Date(lastIncident.dateRecorded);
-    const today = new Date();
-    return Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-  }
-
-  const renderOverviewSection = () => (
-    <div className="space-y-6">
-      {/* Production Chart */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Iron Ore Production
-        </h2>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={PRODUCTION_DATA}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis label={{ value: 'Thousands of Tonnes', angle: -90, position: 'insideLeft' }} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="actual" fill="#0284c7" name="Actual Production" />
-              <Bar dataKey="target" fill="#9ca3af" name="Target" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Environmental Stats */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Environmental</h3>
-              <p className="mt-2 text-3xl font-bold">{envStats.complianceRate}%</p>
-              <p className="text-sm text-gray-500">Compliance Rate</p>
-            </div>
-            <Activity className="h-8 w-8 text-green-500" />
-          </div>
-        </div>
-
-        {/* Safety Stats */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Safety</h3>
-              <p className="mt-2 text-3xl font-bold">{safetyStats.daysWithoutIncident}</p>
-              <p className="text-sm text-gray-500">Days Without Incident</p>
-            </div>
-            <AlertTriangle className="h-8 w-8 text-amber-500" />
-          </div>
-        </div>
-
-        {/* Production Stats */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Production</h3>
-              <p className="mt-2 text-3xl font-bold">
-                {PRODUCTION_DATA.reduce((sum, item) => sum + item.actual, 0).toFixed(1)}k
-              </p>
-              <p className="text-sm text-gray-500">Total Production (kt)</p>
-            </div>
-            <Building2 className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Environmental Chart */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Environmental Performance</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={environmentalData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="measurementDate" 
-                  tickFormatter={(date) => new Date(date).toLocaleDateString()}
-                />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="measuredValue" 
-                  stroke="#0284c7" 
-                  name="Air Quality"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Safety Chart */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Safety Performance</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={safetyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="dateRecorded" 
-                  tickFormatter={(date) => new Date(date).toLocaleDateString()}
-                />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="lostTimeIncidents" 
-                  stroke="#ef4444" 
-                  name="Incidents"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="nearMisses" 
-                  stroke="#f59e0b" 
-                  name="Near Misses"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Community Updates */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Notices */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Community Notices</h3>
-          <div className="space-y-4">
-            {COMMUNITY_NOTICES.map((notice) => (
-              <div 
-                key={notice.id} 
-                className={`p-4 rounded-lg ${
-                  notice.type === 'alert' ? 'bg-red-50' :
-                  notice.type === 'warning' ? 'bg-amber-50' :
-                  'bg-blue-50'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <h4 className="font-semibold text-gray-900">{notice.title}</h4>
-                  <span className="text-sm text-gray-500">{notice.date}</span>
-                </div>
-                <p className="mt-1 text-gray-600">{notice.message}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Weather */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Weather Conditions</h3>
-          <div className="grid grid-cols-5 gap-4">
-            {WEATHER_DATA.map((day, index) => (
-              <div key={index} className="text-center">
-                <p className="font-medium text-gray-900">
-                  {new Date(day.date).toLocaleDateString('en-US', { 
-                    weekday: 'short' 
-                  })}
-                </p>
-                <div className="my-2">
-                  <Sun className="w-8 h-8 mx-auto text-amber-500" />
-                </div>
-                <p className="text-lg font-bold text-gray-900">{day.temp}°C</p>
-                <div className="flex items-center justify-center text-gray-500">
-                  <Wind className="w-4 h-4 mr-1" />
-                  <span>{day.wind}km/h</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 p-4 bg-amber-50 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="text-amber-500 w-5 h-5 mt-1" />
-              <div>
-                <h4 className="font-semibold text-amber-900">Dust Alert: MODERATE</h4>
-                <p className="mt-1 text-amber-700">
-                  Current wind conditions may lead to increased dust levels
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const sidebarItems = [
-    { id: 'overview', label: 'Overview', icon: Building2 },
-    { id: 'environmental', label: 'Environmental Data', icon: Activity },
-    { id: 'safety', label: 'Safety Reports', icon: AlertTriangle },
-    { id: 'weather', label: 'Weather & Alerts', icon: Cloud },
-    { id: 'notices', label: 'Community Updates', icon: Bell }
-  ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'environmental':
-        return <div>Environmental Data Section</div>;
+        return <EnvironmentalDataSection />;
       case 'safety':
-        return <div>Safety Reports Section</div>;
-      case 'weather':
-        return <div>Weather & Alerts Section</div>;
-      case 'notices':
-        return <div>Community Updates Section</div>;
+        return <SafetyDataSection />;
       default:
-        return renderOverviewSection();
+        return (
+          <div className="space-y-6">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg shadow-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white text-sm">Air Quality Index</p>
+                    <h3 className="text-white text-2xl font-bold">Good (32)</h3>
+                  </div>
+                  <Droplets className="h-10 w-10 text-white opacity-75" />
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white text-sm">Safety Score</p>
+                    <h3 className="text-white text-2xl font-bold">98.5%</h3>
+                  </div>
+                  <Shield className="h-10 w-10 text-white opacity-75" />
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white text-sm">Community Projects</p>
+                    <h3 className="text-white text-2xl font-bold">12 Active</h3>
+                  </div>
+                  <Users className="h-10 w-10 text-white opacity-75" />
+                </div>
+              </div>
+            </div>
+
+            {/* Production Chart */}
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-800">Iron Ore Production</h2>
+                <Info className="h-5 w-5 text-gray-400 hover:text-amber-500 cursor-pointer" />
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={MOCK_PRODUCTION}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="month" stroke="#4B5563" />
+                  <YAxis label={{ value: 'Tonnes (k)', angle: -90, position: 'insideLeft' }} stroke="#4B5563" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#ffffff', borderRadius: '0.5rem' }}
+                    itemStyle={{ color: '#1A202C' }}
+                  />
+                  <Bar dataKey="actual" fill="#1A202C" name="Actual" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="target" fill="#F59E0B" name="Target" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Air Quality and Weather */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800">Air Quality Trends</h2>
+                  <Eye className="h-5 w-5 text-gray-400" />
+                </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={MOCK_AIR_QUALITY}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="time" stroke="#4B5563" />
+                    <YAxis stroke="#4B5563" />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="pm25" stroke="#F59E0B" name="PM2.5" />
+                    <Line type="monotone" dataKey="pm10" stroke="#1A202C" name="PM10" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800">5-Day Weather</h2>
+                  <Cloud className="h-5 w-5 text-gray-400" />
+                </div>
+                <div className="grid grid-cols-5 text-center gap-4">
+                  {MOCK_WEATHER.map((day, index) => (
+                    <div key={index} className="p-4 bg-gray-50 rounded-lg transition-all hover:shadow-md">
+                      <p className="font-semibold text-gray-700">{day.date}</p>
+                      <day.icon className="mx-auto w-8 h-8 text-amber-500 my-2" />
+                      <p className="text-lg font-bold text-gray-800">{day.temp}°C</p>
+                      <div className="flex items-center justify-center text-gray-600">
+                        <Wind className="h-4 w-4 mr-1" />
+                        <p>{day.wind}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Safety Tips and Notices */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800">Safety Tips</h2>
+                  <HardHat className="h-5 w-5 text-gray-400" />
+                </div>
+                <div className="space-y-4">
+                  {MOCK_SAFETY_TIPS.map(tip => (
+                    <div key={tip.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <tip.icon className="h-5 w-5 text-amber-500 mr-2" />
+                        <h3 className="font-semibold text-gray-800">{tip.title}</h3>
+                      </div>
+                      <ul className="list-disc list-inside space-y-1">
+                        {tip.tips.map((item, index) => (
+                          <li key={index} className="text-gray-600 text-sm">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800">Community Notices</h2>
+                  <Bell className="h-5 w-5 text-gray-400" />
+                </div>
+                <div className="space-y-4">
+                  {MOCK_NOTICES.map(notice => (
+                    <div 
+                      key={notice.id} 
+                      className="border-l-4 border-amber-500 bg-amber-50 p-4 rounded-r-lg"
+                    >
+                      <div className="flex items-center">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
+                        <h3 className="font-semibold text-gray-800">{notice.title}</h3>
+                      </div>
+                      <p className="text-gray-600 mt-1">{notice.message}</p>
+                      <p className="text-sm text-gray-500 mt-1">{notice.date}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Jobs Section */}
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-800">Career Opportunities</h2>
+                <Briefcase className="h-5 w-5 text-gray-400" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {MOCK_JOBS.map(job => (
+                  <div key={job.id} className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all">
+                    <h3 className="font-semibold text-gray-800">{job.title}</h3>
+                    <p className="text-sm text-gray-600">{job.location}</p>
+                    <p className="text-sm text-amber-500">{job.department}</p>
+                    <button className="mt-2 text-sm text-white bg-amber-500 px-4 py-2 rounded-md hover:bg-amber-600 transition-colors">
+                      Apply Now
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Photo of the Week */}
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-800">Photo of the Week</h2>
+                <FileText className="h-5 w-5 text-gray-400" />
+              </div>
+              <div className="relative">
+                <img
+                  src="/assets/images/ellie-josie-tacora.png"
+                  alt="Josie and Ellie"
+                  className="rounded-lg object-cover w-full h-64"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 rounded-b-lg">
+                  <p className="text-white text-lg">
+                    Josie & Ellie ensuring Scully Mine meets safety and environmental standards!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
     }
   };
 
-  // Loading state
-  if (envLoading || safetyLoading) {
-    return (
-      <div className="min-h-screen bg-[#151922] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#151922]">
-      {/* Header */}
-      <header className="bg-[#1A1F2B] border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Shield className="h-8 w-8 text-amber-500" />
-              <div>
-                <h1 className="text-xl font-bold text-white">
-                  Welcome, {user?.username}
-                </h1>
-                <span className="text-sm text-gray-400">
-                  {SCULLY_MINE.name} - Community Portal
-                </span>
-              </div>
+    <div className="min-h-screen bg-[#151922] text-gray-50">
+        <header className="bg-[#151922] border-b border-gray-800">
+            <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
+                <div className="flex items-center space-x-4">
+                    <Building2 className="h-8 w-8 text-amber-500" />
+                    <h1 className="text-2xl font-bold text-white">Community Portal</h1>
+                </div>
+                <div className="flex items-center space-x-4">
+                    <div className="relative">
+                        <Bell className="h-5 w-5 text-gray-400 hover:text-amber-500 cursor-pointer" />
+                        <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                    </div>
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('user');
+                            navigate('/login');
+                        }}
+                        className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                    >
+                        Logout
+                    </button>
+                </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => {
-                  localStorage.removeItem('user');
-                  navigate('/login');
-                }}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Logout
-              </button>
+        </header>
+
+        <div className="flex">
+            <div className="w-64 min-h-screen bg-[#151922] border-r border-gray-800 flex flex-col">
+                <nav className="mt-5 px-2 flex-grow">
+                    {[
+                        { id: 'overview', label: 'Overview', icon: Building2 },
+                        { id: 'environmental', label: 'Environmental Data', icon: Activity },
+                        { id: 'safety', label: 'Safety Reports', icon: AlertTriangle }
+                    ].map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id)}
+                            className={`w-full flex items-center px-3 py-2 my-1 rounded-md transition-colors ${
+                                activeTab === item.id
+                                    ? 'bg-amber-500 text-black font-medium'
+                                    : 'text-gray-300 hover:bg-gray-800'
+                            }`}
+                        >
+                            <item.icon className="mr-3 h-5 w-5" />
+                            {item.label}
+                        </button>
+                    ))}
+                </nav>
+
+                <div className="mt-8 px-4">
+                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                        Quick Links
+                    </h3>
+                    <div className="space-y-2">
+                        <a href="#" className="flex items-center text-gray-300 hover:text-amber-500 text-sm py-1">
+                            <FileText className="h-4 w-4 mr-2" />
+                            Community Guidelines
+                        </a>
+                        <a href="#" className="flex items-center text-gray-300 hover:text-amber-500 text-sm py-1">
+                            <Shield className="h-4 w-4 mr-2" />
+                            Emergency Contacts
+                        </a>
+                        <a href="#" className="flex items-center text-gray-300 hover:text-amber-500 text-sm py-1">
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Report an Issue
+                        </a>
+                    </div>
+                </div>
+
+                <div className="mt-auto p-4 border-t border-gray-800">
+                    <div className="flex items-center text-gray-400">
+                        <Shield className="h-4 w-4 flex-shrink-0 mr-2" />
+                        <span className="text-sm">Emergency: 1-800-555-0123</span>
+                    </div>
+                </div>
             </div>
-          </div>
+
+            <main className="flex-1 overflow-auto bg-gray-100">
+                <div className="max-w-7xl mx-auto p-8">
+                    {renderContent()}
+                </div>
+            </main>
         </div>
-      </header>
-
-      <div className="flex min-h-screen">
-        {/* Sidebar */}
-        <div className="w-64 bg-[#1A1F2B] border-r border-gray-800">
-          <nav className="mt-5 px-2">
-            {sidebarItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center px-3 py-2 my-1 text-sm font-medium rounded-md ${
-                  activeTab === item.id
-                    ? 'bg-amber-500 text-black'
-                    : 'text-gray-300 hover:bg-[#1E2330]'
-                }`}
-              >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <main className="flex-1 p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Date Range Selector */}
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-400">Date Range:</span>
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="bg-[#1E2330] text-white border border-gray-700 rounded px-3 py-2"
-                />
-                <span className="text-gray-400">to</span>
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="bg-[#1E2330] text-white border border-gray-700 rounded px-3 py-2"
-                />
-              </div>
-            </div>
-
-            {/* Dynamic Content */}
-            <div className="space-y-6">
-              {renderContent()}
-            </div>
-          </div>
-        </main>
-      </div>
     </div>
-  );
-}
+);
+};
+
+export default UserDashboard;
