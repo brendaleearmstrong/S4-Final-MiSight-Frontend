@@ -1,0 +1,13 @@
+
+{
+  "incidents": [
+    {
+      "id": 1,
+      "dateRecorded": "2024-12-01",
+      "lostTimeIncidents": 0,
+      "nearMisses": 2,
+      "safetyLevel": "GOOD"
+    }
+  ]
+}
+

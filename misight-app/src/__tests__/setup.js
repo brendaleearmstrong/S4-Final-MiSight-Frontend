@@ -1,6 +1,7 @@
-import '@testing-library/jest-dom';
-import 'whatwg-fetch';
-import { server } from '../src/mocks/server';
+
+import "@testing-library/jest-dom";
+import "whatwg-fetch";
+import { server } from "../mocks/server";
 
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());

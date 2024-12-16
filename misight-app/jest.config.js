@@ -1,17 +1,16 @@
-export default {
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/setupTests.js'],
+
+module.exports = {
+  testEnvironment: "jsdom",
+  setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.js"],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    "^@/(.*)$": "<rootDir>/src/$1",
+    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
   },
-  transform: {
-    '^.+\\.(js|jsx)$': 'babel-jest',
-  },
+  testMatch: ["**/__tests__/**/*.test.[jt]s?(x)"],
   collectCoverageFrom: [
-    'src/**/*.{js,jsx}',
-    '!src/main.jsx',
-    '!src/vite-env.d.ts',
-    '!src/**/*.d.ts',
+    "src/**/*.{js,jsx}",
+    "!src/main.jsx",
+    "!src/mocks/**",
   ],
 };
+
