@@ -1,26 +1,37 @@
-import { describe, test, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { DashboardHeader } from '@/components/dashboard/layout/DashboardHeader'
+import { describe, test, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import DashboardHeader from './DashboardHeader';
+
+const mockNavigate = vi.fn();
 
 vi.mock('react-router-dom', () => ({
-  useNavigate: () => vi.fn()
-}))
+  ...vi.importActual('react-router-dom'),
+  useNavigate: () => mockNavigate
+}));
 
 describe('DashboardHeader', () => {
-  test('renders header with title', () => {
-    render(<DashboardHeader />)
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
-  })
+  test('renders header with logout button', () => {
+    render(
+      <BrowserRouter>
+        <DashboardHeader />
+      </BrowserRouter>
+    );
+    
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Logout')).toBeInTheDocument();
+  });
 
-  test('handles logout', () => {
-    const mockNavigate = vi.fn()
-    vi.mock('react-router-dom', () => ({
-      useNavigate: () => mockNavigate
-    }))
+  test('handles logout when clicked', () => {
+    const mockOnLogout = vi.fn();
+    
+    render(
+      <BrowserRouter>
+        <DashboardHeader onLogout={mockOnLogout} />
+      </BrowserRouter>
+    );
 
-    render(<DashboardHeader />)
-    const logoutButton = screen.getByRole('button', { name: /logout/i })
-    fireEvent.click(logoutButton)
-    expect(mockNavigate).toHaveBeenCalledWith('/login')
-  })
-})
+    fireEvent.click(screen.getByText('Logout'));
+    expect(mockOnLogout).toHaveBeenCalled();
+  });
+});

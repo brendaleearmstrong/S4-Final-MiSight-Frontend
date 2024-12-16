@@ -1,4 +1,3 @@
-// src/components/dashboard/sections/UsersSection.jsx
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '../DataTable';
@@ -18,16 +17,10 @@ export function UsersSection() {
 
   const createMutation = useMutation({
     mutationFn: async (formData) => {
-      const data = {
-        username: formData.username,
-        password: formData.password,
-        role: formData.role,
-        privileges: formData.privileges || []
-      };
-      return await endpoints.users.create(data);
+      return await endpoints.users.create(formData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('users');
+      queryClient.invalidateQueries(['users']);
       setShowModal(false);
     }
   });
@@ -37,8 +30,16 @@ export function UsersSection() {
       return await endpoints.users.update(id, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('users');
+      queryClient.invalidateQueries(['users']);
       setShowModal(false);
+      setEditingUser(null);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: endpoints.users.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
     }
   });
 
@@ -46,9 +47,15 @@ export function UsersSection() {
     { key: 'username', label: 'Username' },
     { key: 'role', label: 'Role' },
     { 
-      key: 'privileges', 
-      label: 'Privileges',
-      render: (privileges) => privileges?.join(', ') || '-'
+      key: 'status', 
+      label: 'Status',
+      render: (status) => (
+        <span className={`px-2 py-1 rounded-full text-xs ${
+          status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+        }`}>
+          {status || 'active'}
+        </span>
+      )
     }
   ];
 
@@ -71,17 +78,25 @@ export function UsersSection() {
       type: 'select',
       required: true,
       options: [
-        { value: 'ADMIN', label: 'Admin' },
+        { value: 'USER', label: 'User' },
         { value: 'MINE_ADMIN', label: 'Mine Admin' },
-        { value: 'USER', label: 'User' }
+        { value: 'ADMIN', label: 'Admin' }
       ]
     }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Users Management</h2>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Users Management</h2>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center px-4 py-2 bg-amber-500 text-black rounded hover:bg-amber-600"
@@ -100,8 +115,7 @@ export function UsersSection() {
         }}
         onDelete={(id) => {
           if (window.confirm('Are you sure you want to delete this user?')) {
-            endpoints.users.delete(id);
-            queryClient.invalidateQueries('users');
+            deleteMutation.mutate(id);
           }
         }}
       />
@@ -126,3 +140,5 @@ export function UsersSection() {
     </div>
   );
 }
+
+export default UsersSection;
