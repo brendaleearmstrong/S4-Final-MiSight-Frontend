@@ -1,0 +1,16 @@
+
+{
+  "measurements": [
+    {
+      "id": 1,
+      "measuredValue": 45,
+      "measurementDate": "2024-12-01",
+      "pollutant": {
+        "name": "PM10",
+        "benchmarkValue": 50,
+        "unit": "μg/m³"
+      }
+    }
+  ]
+}
+
