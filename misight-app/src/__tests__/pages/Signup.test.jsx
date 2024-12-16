@@ -1,3 +1,4 @@
+// src/__tests__/pages/Signup.test.jsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -13,7 +14,7 @@ describe('Signup Page', () => {
     );
 
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument(); // Added ^ and $ to match exact text
     expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
@@ -27,7 +28,7 @@ describe('Signup Page', () => {
     );
 
     const usernameInput = screen.getByLabelText(/username/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = screen.getByLabelText(/^password$/i); // Added ^ and $ to match exact text
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
     const roleSelect = screen.getByLabelText(/role/i);
     const signupButton = screen.getByRole('button', { name: /create account/i });
@@ -38,9 +39,9 @@ describe('Signup Page', () => {
     fireEvent.change(roleSelect, { target: { value: 'USER' } });
     fireEvent.click(signupButton);
 
-    expect(screen.getByLabelText(/username/i).value).toBe('testuser');
-    expect(screen.getByLabelText(/password/i).value).toBe('password123');
-    expect(screen.getByLabelText(/confirm password/i).value).toBe('password123');
-    expect(screen.getByLabelText(/role/i).value).toBe('USER');
+    expect(usernameInput.value).toBe('testuser');
+    expect(passwordInput.value).toBe('password123');
+    expect(confirmPasswordInput.value).toBe('password123');
+    expect(roleSelect.value).toBe('USER');
   });
 });

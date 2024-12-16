@@ -22,5 +22,16 @@ export default defineConfig({
     rollupOptions: {
       input: path.resolve(__dirname, 'index.html')
     }
+  },
+  // Add test configuration
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.cjs',
+    css: true,
+    deps: {
+      inline: ['vitest-canvas-mock'],
+    },
+    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
   }
 })
