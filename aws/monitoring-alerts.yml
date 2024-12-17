@@ -1,0 +1,33 @@
+# monitoring-alerts.yml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudWatch Alarms for Misight App'
+
+Parameters:
+  CloudFrontDistributionId:
+    Type: String
+    Description: ID of the CloudFront distribution
+
+Resources:
+  AlertsSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: misight-app-alerts
+
+  HighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: MisightAppHighErrorRate
+      AlarmDescription: Alert on high error rate
+      MetricName: 5XXError
+      Namespace: AWS/CloudFront
+      Dimensions:
+        - Name: DistributionId
+          Value: 
+            Ref: CloudFrontDistributionId
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions: 
+        - Ref: AlertsSNSTopic
