@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Disaster Recovery Configuration for Misight Frontend'
+
+Resources:
+  ReplicationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sts:AssumeRole
+
+  BackupBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      ReplicationConfiguration:
+        Role: ${ReplicationRole.Arn}
+        Rules:
+          - Destination:
+              Bucket: arn:aws:s3:::${BackupBucketName}
+            Status: Enabled
+            Priority: 1
+
+Parameters:
+  BackupBucketName:
+    Type: String
+    Description: Name of the backup bucket
+
+Outputs:
+  BackupBucketArn:
+    Description: ARN of the backup bucket
+    Value: ${BackupBucket.Arn}

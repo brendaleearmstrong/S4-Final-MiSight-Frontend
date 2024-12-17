@@ -1,0 +1,41 @@
+# cloudwatch-config.yml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudWatch configuration for Misight App'
+
+Parameters:
+  CloudFrontDistributionId:
+    Type: String
+    Description: ID of the CloudFront distribution
+
+Resources:
+  MisightLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/cloudfront/misight-app
+      RetentionInDays: 30
+
+  MisightDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: MisightAppDashboard 
+      DashboardBody:
+        Fn::Sub: |
+          {
+            "widgets": [
+              {
+                "type": "metric",
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    ["AWS/CloudFront", "Requests", "DistributionId", "${CloudFrontDistributionId}"],
+                    ["AWS/CloudFront", "4xxErrorRate", "DistributionId", "${CloudFrontDistributionId}"],
+                    ["AWS/CloudFront", "5xxErrorRate", "DistributionId", "${CloudFrontDistributionId}"]
+                  ],
+                  "period": 300,
+                  "region": "us-east-1",
+                  "title": "CloudFront Metrics"
+                }
+              }
+            ]
+          }
