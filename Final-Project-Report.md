@@ -3,6 +3,8 @@ Student: Brenda Armstrong, SD10
 December 2024
 
 ## Project Resources
+- **Project Demo Video:** [https://youtu.be/4G3xAzIlDUU](https://youtu.be/4G3xAzIlDUU)
+- **Project Report:** [Final-Project-Report.md](https://github.com/brendaleearmstrong/S4-Final-MiSight-Frontend/edit/main/Final-Project-Report.md)
 - **Project Management:** [MiSight Kanban Board](https://github.com/users/brendaleearmstrong/projects/16)
 - **Frontend Deployment:** [https://d2jkb95pf7bi24.cloudfront.net/](https://d2jkb95pf7bi24.cloudfront.net/)
 - **Frontend Repository:** [https://github.com/brendaleearmstrong/S4-Final-MiSight-Frontend](https://github.com/brendaleearmstrong/S4-Final-MiSight-Frontend)
